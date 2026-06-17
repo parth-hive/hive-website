@@ -1,22 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const path = require('path');
 const pool = require('../db/pool');
 const { requireAdmin } = require('../middleware/auth');
+const { storeImage } = require('../utils/storage');
 
 // --- Multer config for image uploads ---
-const storage = multer.diskStorage({
-  destination: path.join(__dirname, '..', 'public', 'uploads'),
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E6) + path.extname(file.originalname);
-    cb(null, uniqueName);
-  }
-});
-
+// Files are kept in memory, then handed to storeImage() which writes them to
+// Supabase Storage in production (Vercel) or to local disk in development.
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB max
   fileFilter: (req, file, cb) => {
     const allowed = /jpeg|jpg|png|webp|gif|svg/;
@@ -130,14 +125,14 @@ router.post('/listings', requireAdmin, upload.fields([{ name: 'image_files', max
     // Build ordered images array using image_order from drag-and-drop
     const imageFiles = req.files && req.files['image_files'] ? req.files['image_files'] : [];
     const urlImages = existing_images ? (Array.isArray(existing_images) ? existing_images : [existing_images]).filter(Boolean) : [];
-    const newUploads = imageFiles.map(f => '/uploads/' + f.filename);
+    const newUploads = await Promise.all(imageFiles.map(f => storeImage(f)));
     let imagesArr = [];
 
     // Handle floor plan file upload
     const floorPlanFiles = req.files && req.files['floor_plan_file'] ? req.files['floor_plan_file'] : [];
     let finalFloorPlan = floor_plan_image || null;
     if (floorPlanFiles.length > 0) {
-      finalFloorPlan = '/uploads/' + floorPlanFiles[0].filename;
+      finalFloorPlan = await storeImage(floorPlanFiles[0]);
     }
 
     if (image_order) {
@@ -252,14 +247,14 @@ router.post('/listings/:id', requireAdmin, upload.fields([{ name: 'image_files',
     // Build ordered images array using image_order from drag-and-drop
     const imageFiles = req.files && req.files['image_files'] ? req.files['image_files'] : [];
     const urlImages = existing_images ? (Array.isArray(existing_images) ? existing_images : [existing_images]).filter(Boolean) : [];
-    const newUploads = imageFiles.map(f => '/uploads/' + f.filename);
+    const newUploads = await Promise.all(imageFiles.map(f => storeImage(f)));
     let imagesArr = [];
 
     // Handle floor plan file upload
     const floorPlanFiles = req.files && req.files['floor_plan_file'] ? req.files['floor_plan_file'] : [];
     let finalFloorPlan = floor_plan_image || null;
     if (floorPlanFiles.length > 0) {
-      finalFloorPlan = '/uploads/' + floorPlanFiles[0].filename;
+      finalFloorPlan = await storeImage(floorPlanFiles[0]);
     }
 
     if (image_order) {

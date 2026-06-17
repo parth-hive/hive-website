@@ -96,6 +96,12 @@ app.use('/', require('./routes/public'));
 app.use('/admin', require('./routes/admin'));
 app.use('/api', require('./routes/api'));
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Start a long-running server only when invoked directly (local dev, Railway).
+// On Vercel the app is imported by api/index.js and served as a serverless function.
+if (require.main === module) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;

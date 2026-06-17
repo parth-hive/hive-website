@@ -1,5 +1,5 @@
 const pool = require('./pool');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 async function seed() {
   try {
