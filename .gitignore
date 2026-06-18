@@ -21,6 +21,12 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Data files (source spreadsheet + generated import data)
+*.xlsx
+*.csv
+*_units.json
+*_images.json
+
 # Logs
 *.log
 npm-debug.log*
