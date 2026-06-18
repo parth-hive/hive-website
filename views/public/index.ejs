@@ -166,7 +166,11 @@ body {
 }
 .hero-bg {
   position: absolute; inset: 0;
-  background: linear-gradient(180deg, #2a2520 0%, #1a1a18 50%);
+  background:
+    linear-gradient(180deg, rgba(20,18,16,0.62) 0%, rgba(20,18,16,0.34) 42%, rgba(20,18,16,0.92) 100%),
+    linear-gradient(90deg, rgba(20,18,16,0.45) 0%, rgba(20,18,16,0) 55%),
+    url('/images/hero.jpg') center/cover no-repeat;
+  background-color: #1a1a18;
 }
 .hero .container { position: relative; z-index: 2; width: 100%; }
 .hero-tag {
