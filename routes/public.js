@@ -6,15 +6,27 @@ const { getGoogleReviews } = require('../utils/googleReviews');
 
 router.get('/', async (req, res) => {
   try {
+    // One listing per property: rooms in the same unit share title + city, so
+    // DISTINCT ON (title, city) keeps a single room per property in featuring.
     const { rows: featuredListings } = await pool.query(
-      `SELECT * FROM listings WHERE featured = true AND status != 'rented'
+      `SELECT * FROM (
+         SELECT DISTINCT ON (lower(btrim(title)), city) *
+         FROM listings
+         WHERE featured = true AND status != 'rented'
+         ORDER BY lower(btrim(title)), city, sort_order ASC
+       ) t
        ORDER BY sort_order ASC LIMIT 6`
     );
     // Fallback: if no featured listings, get the most recent available ones
     let listings = featuredListings;
     if (listings.length === 0) {
       const result = await pool.query(
-        `SELECT * FROM listings WHERE status != 'rented'
+        `SELECT * FROM (
+           SELECT DISTINCT ON (lower(btrim(title)), city) *
+           FROM listings
+           WHERE status != 'rented'
+           ORDER BY lower(btrim(title)), city, created_at DESC
+         ) t
          ORDER BY created_at DESC LIMIT 6`
       );
       listings = result.rows;
