@@ -682,6 +682,18 @@ function runSearch() {
 var searchBtn = document.getElementById('search-btn');
 searchBtn.addEventListener('click', runSearch);
 searchBtn.addEventListener('touchend', function(e) { e.preventDefault(); runSearch(); });
+
+// Pre-filter by location from the URL (e.g. /properties?location=Los%20Angeles)
+(function() {
+  var loc = new URLSearchParams(window.location.search).get('location');
+  if (!loc) return;
+  var sel = document.getElementById('filter-location');
+  var match = Array.prototype.find.call(sel.options, function(o) { return o.value === loc; });
+  if (match) {
+    sel.value = loc;
+    runSearch();
+  }
+})();
 </script>
 
 </body>

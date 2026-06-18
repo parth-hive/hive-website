@@ -1713,14 +1713,14 @@ body {
   <div class="container">
     <h2 class="fp-title reveal">Find Your Next Furnished Home</h2>
     <div class="fp-city-links reveal">
-      <a class="fp-city-link active" data-location="">All Cities</a>
-      <a class="fp-city-link" data-location="New York">New York</a>
-      <a class="fp-city-link" data-location="Los Angeles">Los Angeles</a>
-      <a class="fp-city-link" data-location="Chicago">Chicago</a>
-      <a class="fp-city-link" data-location="Miami">Miami</a>
-      <a class="fp-city-link" data-location="Washington DC">DC</a>
-      <a class="fp-city-link" data-location="San Francisco">San Francisco</a>
-      <a class="fp-city-link" data-location="Boston">Boston</a>
+      <a class="fp-city-link active" href="/properties">All Cities</a>
+      <a class="fp-city-link" href="/properties?location=New%20York">New York</a>
+      <a class="fp-city-link" href="/properties?location=Los%20Angeles">Los Angeles</a>
+      <a class="fp-city-link" href="/properties?location=Chicago">Chicago</a>
+      <a class="fp-city-link" href="/properties?location=Miami">Miami</a>
+      <a class="fp-city-link" href="/properties?location=Washington%20DC">DC</a>
+      <a class="fp-city-link" href="/properties?location=San%20Francisco">San Francisco</a>
+      <a class="fp-city-link" href="/properties?location=Boston">Boston</a>
     </div>
     <div class="fp-grid reveal">
 <% featuredListings.forEach(function(listing) { %>
@@ -1759,9 +1759,6 @@ body {
   </div>
 </a>
 <% }); %>
-    <div class="fp-empty-state" id="fp-empty-state" style="display: none;">
-      <p>No listings available in this location yet.</p>
-    </div>
     </div>
     <div class="fp-cta reveal">
       <a href="/properties" class="fp-browse-link">
@@ -2128,28 +2125,6 @@ if (window.matchMedia('(max-width: 768px)').matches) {
     }, { passive: true });
   });
 }
-
-// Featured city links — filter cards by location
-document.querySelectorAll('.fp-city-link').forEach(link => {
-  link.addEventListener('click', () => {
-    document.querySelectorAll('.fp-city-link').forEach(l => l.classList.remove('active'));
-    link.classList.add('active');
-    var filter = link.dataset.location;
-    var visibleCount = 0;
-    document.querySelectorAll('.fp-card').forEach(card => {
-      if (!filter || card.dataset.location === filter) {
-        card.style.display = '';
-        visibleCount++;
-      } else {
-        card.style.display = 'none';
-      }
-    });
-    var emptyState = document.getElementById('fp-empty-state');
-    if (emptyState) {
-      emptyState.style.display = visibleCount === 0 ? '' : 'none';
-    }
-  });
-});
 
 // Testimonials carousel indicators
 (function() {
