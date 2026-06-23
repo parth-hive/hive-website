@@ -83,7 +83,25 @@ app.use(session({
         message TEXT,
         referral_source VARCHAR(200),
         created_at TIMESTAMP DEFAULT NOW()
-      )`
+      )`,
+      // Paid tenant applications ($20 fee, collected via Stripe Checkout).
+      // `answers` holds the (to-be-finalized) application form fields as JSON so
+      // new questions can be added without further migrations.
+      `CREATE TABLE IF NOT EXISTS tenant_applications (
+        id SERIAL PRIMARY KEY,
+        full_name VARCHAR(200) NOT NULL,
+        email VARCHAR(200) NOT NULL,
+        phone VARCHAR(50),
+        answers JSONB DEFAULT '{}'::jsonb,
+        amount_cents INTEGER NOT NULL DEFAULT 2000,
+        currency VARCHAR(10) NOT NULL DEFAULT 'usd',
+        payment_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+        stripe_session_id VARCHAR(255),
+        stripe_payment_intent VARCHAR(255),
+        paid_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW()
+      )`,
+      `CREATE INDEX IF NOT EXISTS tenant_applications_session_idx ON tenant_applications (stripe_session_id)`
     ];
     for (const sql of migrations) {
       await pool.query(sql);
@@ -117,6 +135,12 @@ app.locals.publicTitle = function (listing) {
 
 // Google Maps JS API key for the approximate-area map (empty => iframe fallback).
 app.locals.mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_API_KEY || '';
+
+// Stripe publishable key for the client-side embedded Checkout (empty => the
+// apply-now page shows a "payments not configured" notice instead of crashing).
+app.locals.stripePublishableKey = process.env.STRIPE_PUBLISHABLE_KEY || '';
+// The tenant application fee, in cents. Single source of truth for server + view.
+app.locals.applicationFeeCents = parseInt(process.env.APPLICATION_FEE_CENTS || '2000', 10);
 
 // Routes
 app.use('/', require('./routes/public'));

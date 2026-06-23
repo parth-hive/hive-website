@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apply Now — Hive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --ink: #1a1a18;
+  --cream: #f5f2ed;
+  --warm: #e8e3db;
+  --stone: #c4bdb3;
+  --muted: #8a8378;
+  --accent: #d4920b;
+  --accent-dark: #b87d09;
+  --accent-text: #9a6f08;
+  --white: #fefdfb;
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --sans: 'DM Sans', -apple-system, sans-serif;
+}
+
+html { scroll-behavior: smooth; font-size: 16px; }
+
+body {
+  font-family: var(--sans);
+  color: var(--ink);
+  background: var(--white);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.container { max-width: 1280px; margin: 0 auto; padding: 0 clamp(24px, 5vw, 80px); }
+
+/* ===== NAV ===== */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 20px 0;
+  background: rgba(254,253,251,0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: none;
+  transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.nav .container { display: flex; align-items: center; justify-content: space-between; }
+.nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+.nav-logo svg { flex-shrink: 0; }
+.nav-logo .logo-text { display: flex; flex-direction: column; line-height: 1; }
+.nav-logo .logo-name {
+  font-family: var(--sans); font-weight: 700; font-size: 1.15rem;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink);
+}
+.nav-logo .logo-tag {
+  font-family: var(--sans); font-size: 0.48rem; font-weight: 500;
+  letter-spacing: 0.14em; text-transform: uppercase; margin-top: 3px;
+  color: var(--ink); opacity: 0.5;
+}
+.nav-links { display: flex; gap: 36px; align-items: center; }
+.nav-links a {
+  font-size: 0.82rem; font-weight: 500; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  transition: color 0.3s;
+}
+.nav-links a:hover { color: var(--accent-text); }
+.nav-cta {
+  font-size: 0.78rem !important;
+  padding: 10px 24px;
+  border: 1px solid var(--accent-text) !important;
+  color: var(--accent-text) !important;
+  transition: all 0.3s !important;
+}
+.nav-cta-apply {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: var(--ink) !important;
+}
+.nav-cta-apply:hover { background: var(--accent-dark) !important; border-color: var(--accent-dark) !important; }
+.nav-mobile { display: none; background: none; border: none; cursor: pointer; }
+.nav-mobile span {
+  display: block; width: 24px; height: 1.5px; background: var(--ink);
+  margin: 6px 0; transition: all 0.3s;
+}
+
+/* ===== PAGE HEADER ===== */
+.page-header {
+  padding-top: clamp(140px, 16vh, 200px);
+  padding-bottom: clamp(48px, 6vw, 80px);
+  background: var(--ink);
+  position: relative; overflow: hidden;
+}
+.page-header::before {
+  content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 30%, rgba(230,210,0,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 80% 70%, rgba(230,210,0,0.04) 0%, transparent 60%);
+  pointer-events: none;
+}
+.page-header .container { position: relative; z-index: 2; }
+.section-tag {
+  display: inline-flex; align-items: center; gap: 12px;
+  font-size: 0.68rem; font-weight: 600; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 24px;
+}
+.section-tag::before { content: ''; width: 32px; height: 1px; background: var(--accent); }
+.page-header h1 {
+  font-family: var(--serif); font-size: clamp(2.4rem, 4.5vw, 4rem);
+  font-weight: 300; line-height: 1.1; color: var(--white);
+}
+.page-header h1 em { font-style: italic; color: var(--accent); }
+.page-header p {
+  font-size: 1rem; font-weight: 300; color: rgba(255,255,255,0.5);
+  margin-top: 16px; max-width: 520px; line-height: 1.7;
+}
+
+/* ===== APPLICATION FORM ===== */
+.apply-section { padding: clamp(60px, 8vw, 100px) 0; }
+.apply-inner { max-width: 640px; margin: 0 auto; }
+.apply-inner h2 {
+  font-family: var(--serif); font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 300; line-height: 1.2; color: var(--ink); margin-bottom: 8px;
+}
+.apply-inner h2 em { font-style: italic; color: var(--accent-text); }
+.apply-intro {
+  font-size: 0.92rem; font-weight: 300; color: var(--muted);
+  line-height: 1.6; margin-bottom: 32px;
+}
+
+/* Fee callout */
+.fee-note {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 20px; margin-bottom: 36px;
+  background: var(--cream); border: 1px solid var(--warm); border-radius: 8px;
+}
+.fee-note .fee-amount {
+  font-family: var(--serif); font-size: 1.8rem; font-weight: 500; color: var(--accent-text);
+  line-height: 1;
+}
+.fee-note .fee-text { font-size: 0.85rem; font-weight: 300; color: var(--muted); line-height: 1.5; }
+
+.apply-form { display: flex; flex-direction: column; gap: 28px; }
+.form-group { display: flex; flex-direction: column; gap: 8px; }
+.form-group label {
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+}
+.form-group label .required { color: var(--accent-text); }
+.form-group input,
+.form-group textarea {
+  font-family: var(--sans); font-size: 0.92rem; font-weight: 400; color: var(--ink);
+  padding: 14px 16px; border: 1px solid var(--warm); background: var(--white);
+  transition: border-color 0.3s; outline: none; border-radius: 0;
+}
+.form-group input:focus, .form-group textarea:focus { border-color: var(--accent-text); }
+.form-group textarea { min-height: 140px; resize: vertical; line-height: 1.6; }
+.form-group input::placeholder, .form-group textarea::placeholder { color: var(--stone); font-weight: 300; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.apply-submit {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 16px 40px; font-family: var(--sans); font-size: 0.88rem; font-weight: 500;
+  color: var(--ink); background: var(--accent); border: none; border-radius: 0;
+  cursor: pointer; transition: all 0.3s; margin-top: 8px; align-self: flex-start;
+}
+.apply-submit:hover { background: var(--accent-dark); }
+.apply-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.form-error {
+  display: none; padding: 12px 16px; background: #fdecea; border: 1px solid #f5c6c2;
+  color: #a3261c; font-size: 0.85rem; border-radius: 6px;
+}
+.config-warning {
+  padding: 14px 18px; margin-bottom: 28px; background: #fff7e6; border: 1px solid #f0d28a;
+  color: #8a6d1b; font-size: 0.85rem; line-height: 1.5; border-radius: 6px;
+}
+
+/* ===== STRIPE CHECKOUT MODAL ===== */
+.checkout-overlay {
+  display: none; position: fixed; inset: 0; z-index: 1000;
+  background: rgba(26,26,24,0.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  align-items: flex-start; justify-content: center; overflow-y: auto; padding: 40px 16px;
+}
+.checkout-overlay.open { display: flex; }
+.checkout-modal {
+  position: relative; width: 100%; max-width: 560px; background: var(--white);
+  border-radius: 12px; box-shadow: 0 24px 70px rgba(0,0,0,0.35); padding: 24px;
+  margin: auto;
+}
+.checkout-modal-head {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+}
+.checkout-modal-head h3 {
+  font-family: var(--serif); font-size: 1.3rem; font-weight: 400; color: var(--ink);
+}
+.checkout-close {
+  background: none; border: none; cursor: pointer; font-size: 1.5rem; line-height: 1;
+  color: var(--muted); padding: 4px 8px;
+}
+.checkout-close:hover { color: var(--ink); }
+#checkout { min-height: 200px; }
+
+/* ===== FOOTER ===== */
+.footer { padding: clamp(48px, 6vw, 80px) 0 40px; background: var(--ink); }
+.footer-top {
+  display: grid; grid-template-columns: 1.5fr repeat(3, 1fr); gap: 48px;
+  padding-bottom: 32px; border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.footer-brand p {
+  font-size: 0.88rem; font-weight: 300; line-height: 1.7;
+  color: rgba(255,255,255,0.35); max-width: 320px; margin-bottom: 28px;
+}
+.footer-col h4 {
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255,255,255,0.6); margin-bottom: 24px;
+}
+.footer-col a {
+  display: block; font-size: 0.88rem; font-weight: 300; color: rgba(255,255,255,0.35);
+  text-decoration: none; margin-bottom: 14px; transition: color 0.3s;
+}
+.footer-col a:hover { color: var(--accent); }
+.footer-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 32px; }
+.footer-bottom p { font-size: 0.78rem; font-weight: 300; color: rgba(255,255,255,0.25); }
+.footer-bottom a { font-size: 0.78rem; font-weight: 300; color: rgba(255,255,255,0.25); text-decoration: none; }
+.footer .nav-logo .logo-name { color: #fefdfb; }
+.footer .nav-logo .logo-tag { color: #fefdfb; }
+
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .nav-mobile { display: block; }
+  .form-row { grid-template-columns: 1fr; }
+  .footer-top { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .apply-submit { width: 100%; justify-content: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="container">
+    <a href="/" class="nav-logo">
+              <svg width="24" height="30" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg"><circle cx="40" cy="8" r="4.5" fill="#d4920b"/><rect x="28" y="18" width="24" height="6" rx="3" fill="#d4920b"/><rect x="18" y="32" width="44" height="6" rx="3" fill="#d4920b"/><rect x="15" y="46" width="50" height="6" rx="3" fill="#d4920b"/><rect x="18" y="60" width="44" height="6" rx="3" fill="#d4920b"/><rect x="28" y="74" width="24" height="6" rx="3" fill="#d4920b"/><circle cx="40" cy="88" r="4" fill="#d4920b"/></svg>
+              <div class="logo-text"><span class="logo-name">Hive</span><span class="logo-tag">City Living, Made Simple</span></div>
+            </a>
+    <div class="nav-links">
+      <a href="/properties">Properties</a>
+      <a href="/partners">For Landlords</a>
+      <a href="/#about">About</a>
+      <a href="/apply-now" class="nav-cta nav-cta-apply">Apply Now</a>
+    </div>
+    <button class="nav-mobile" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- PAGE HEADER -->
+<section class="page-header">
+  <div class="container">
+    <div class="section-tag">Apply Now</div>
+    <h1>Apply for Your <em>Home.</em></h1>
+    <p>Complete your application and pay the one-time application fee to get started. Our team will review and reach out with next steps.</p>
+  </div>
+</section>
+
+<!-- APPLICATION FORM -->
+<section class="apply-section">
+  <div class="container">
+    <div class="apply-inner">
+      <h2>Your <em>Application.</em></h2>
+      <p class="apply-intro">Tell us about yourself below. After submitting, you'll complete a secure <%= (feeCents/100).toFixed(2) %> USD application fee payment without leaving this page.</p>
+
+      <% if (!paymentsEnabled) { %>
+      <div class="config-warning">
+        <strong>Payments not configured.</strong> Stripe keys are not set on the server yet, so the application fee can't be collected. Add <code>STRIPE_SECRET_KEY</code> and <code>STRIPE_PUBLISHABLE_KEY</code> to enable checkout.
+      </div>
+      <% } %>
+
+      <div class="fee-note">
+        <span class="fee-amount">$<%= (feeCents/100).toFixed(2) %></span>
+        <span class="fee-text">One-time, non-refundable application fee, paid securely by card. Charged only after you submit the form below.</span>
+      </div>
+
+      <div class="form-error" id="form-error"></div>
+
+      <form class="apply-form" id="apply-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Full Name <span class="required">*</span></label>
+            <input type="text" name="full_name" placeholder="Your full name" required>
+          </div>
+          <div class="form-group">
+            <label>Email <span class="required">*</span></label>
+            <input type="email" name="email" placeholder="you@email.com" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="tel" name="phone" placeholder="(555) 123-4567">
+        </div>
+
+        <!-- TODO: additional application fields go here. Any <input>/<textarea>/<select>
+             with a name= attribute is automatically saved to the application's `answers`. -->
+
+        <button type="submit" class="apply-submit" id="apply-submit">
+          Continue to Payment
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.3"/></svg>
+        </button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- STRIPE CHECKOUT MODAL -->
+<div class="checkout-overlay" id="checkout-overlay">
+  <div class="checkout-modal">
+    <div class="checkout-modal-head">
+      <h3>Application Fee — $<%= (feeCents/100).toFixed(2) %></h3>
+      <button type="button" class="checkout-close" id="checkout-close" aria-label="Close">&times;</button>
+    </div>
+    <div id="checkout"></div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="/" class="nav-logo">
+              <svg width="24" height="30" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg"><circle cx="40" cy="8" r="4.5" fill="#d4920b"/><rect x="28" y="18" width="24" height="6" rx="3" fill="#d4920b"/><rect x="18" y="32" width="44" height="6" rx="3" fill="#d4920b"/><rect x="15" y="46" width="50" height="6" rx="3" fill="#d4920b"/><rect x="18" y="60" width="44" height="6" rx="3" fill="#d4920b"/><rect x="28" y="74" width="24" height="6" rx="3" fill="#d4920b"/><circle cx="40" cy="88" r="4" fill="#d4920b"/></svg>
+              <div class="logo-text"><span class="logo-name">Hive</span><span class="logo-tag">City Living, Made Simple</span></div>
+            </a>
+        <p>Move-in ready, fully furnished with flexible lease terms. No broker fees, no guarantors required, no hidden fees.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Residences</h4>
+        <a href="#">New York</a>
+        <a href="#">Los Angeles</a>
+        <a href="#">Chicago</a>
+        <a href="#">Miami</a>
+        <a href="/properties">All Properties</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/#about">About Us</a>
+      </div>
+      <div class="footer-col">
+        <h4>Support</h4>
+        <a href="/partners/apply">Contact Us</a>
+        <a href="#">FAQ</a>
+        <a href="/partners">Partner With Us</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Privacy Policy</a>
+        <a href="/admin/login">Admin Login</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Hive. All rights reserved.</p>
+      <a href="#">hello@hiveny.com</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Mobile nav toggle
+const navMobile = document.querySelector('.nav-mobile');
+const navLinks = document.querySelector('.nav-links');
+if (navMobile) {
+  navMobile.addEventListener('click', () => {
+    if (navLinks.style.display === 'flex') {
+      navLinks.style.display = 'none';
+    } else {
+      navLinks.style.display = 'flex';
+      navLinks.style.position = 'absolute';
+      navLinks.style.top = '100%';
+      navLinks.style.left = '0';
+      navLinks.style.right = '0';
+      navLinks.style.background = 'rgba(254,253,251,0.98)';
+      navLinks.style.flexDirection = 'column';
+      navLinks.style.padding = '24px clamp(24px, 5vw, 80px)';
+      navLinks.style.gap = '20px';
+    }
+  });
+}
+
+// ===== Embedded Stripe Checkout =====
+(function () {
+  var publishableKey = '<%= stripePublishableKey %>';
+  var form = document.getElementById('apply-form');
+  var submitBtn = document.getElementById('apply-submit');
+  var overlay = document.getElementById('checkout-overlay');
+  var closeBtn = document.getElementById('checkout-close');
+  var errorBox = document.getElementById('form-error');
+  var stripe = publishableKey ? Stripe(publishableKey) : null;
+  var checkout = null;
+
+  function showError(msg) {
+    errorBox.textContent = msg;
+    errorBox.style.display = 'block';
+  }
+  function clearError() { errorBox.style.display = 'none'; }
+
+  async function closeModal() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+    if (checkout) { try { await checkout.destroy(); } catch (e) {} checkout = null; }
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = 'Continue to Payment <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.3"/></svg>';
+  }
+
+  closeBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    clearError();
+    if (!stripe) { showError('Payments are not available right now. Please try again later.'); return; }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Loading…';
+
+    try {
+      var payload = Object.fromEntries(new FormData(form).entries());
+      var res = await fetch('/apply-now/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      var data = await res.json();
+      if (!res.ok) { showError(data.error || 'Something went wrong. Please try again.'); submitBtn.disabled = false; submitBtn.textContent = 'Continue to Payment'; return; }
+
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      checkout = await stripe.initEmbeddedCheckout({ clientSecret: data.clientSecret });
+      checkout.mount('#checkout');
+    } catch (err) {
+      showError('Could not start payment. Please check your connection and try again.');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Continue to Payment';
+    }
+  });
+})();
+</script>
+</body>
+</html>
