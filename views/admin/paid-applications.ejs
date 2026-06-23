@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hive Admin - Paid Applications</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #1a1a18;
+      --cream: #f5f2ed;
+      --accent: #d4920b;
+      --accent-dark: #b87d09;
+      --white: #fefdfb;
+      --muted: #8a8378;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'DM Sans', sans-serif; background-color: var(--cream); color: var(--ink); min-height: 100vh; }
+
+    .admin-nav { background: var(--ink); color: var(--white); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; height: 56px; }
+    .admin-nav-brand { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; color: var(--white); text-decoration: none; letter-spacing: 1px; }
+    .admin-nav-brand span { font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-left: 10px; }
+    .admin-nav-right { display: flex; align-items: center; gap: 20px; font-size: 14px; }
+    .admin-nav-right .admin-greeting { color: #b0ada6; }
+    .admin-nav-right a { color: var(--accent); text-decoration: none; font-size: 13px; font-weight: 500; }
+    .admin-nav-right a:hover { color: var(--accent-dark); }
+
+    .admin-tabs { display: flex; gap: 0; background: var(--white); border-bottom: 1px solid #e0ddd7; padding: 0 32px; }
+    .admin-tab { padding: 14px 24px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
+    .admin-tab:hover { color: var(--ink); }
+    .admin-tab.active { color: var(--ink); font-weight: 600; border-bottom-color: var(--accent); }
+
+    .admin-content { max-width: 1240px; margin: 0 auto; padding: 32px 24px; }
+    .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .admin-header h2 { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 600; }
+    .admin-header .count { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 12px; }
+
+    .table-wrapper { background: var(--white); border: 1px solid #e0ddd7; border-radius: 8px; overflow: auto; box-shadow: 0 1px 4px rgba(26,26,24,0.04); }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .data-table thead { background: #f8f6f2; }
+    .data-table th { padding: 12px 16px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); border-bottom: 1px solid #e0ddd7; white-space: nowrap; }
+    .data-table td { padding: 14px 16px; border-bottom: 1px solid #eceae5; vertical-align: top; }
+    .data-table tbody tr:last-child td { border-bottom: none; }
+    .data-table tbody tr:hover { background: #faf9f6; }
+
+    .app-name { font-weight: 600; }
+    .sub { color: var(--muted); font-size: 13px; }
+    .app-date { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; background: #ecf7ed; color: #1f7a32; font-size: 12px; font-weight: 600; }
+
+    .id-btn { display: inline-block; padding: 5px 12px; margin: 2px 4px 2px 0; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: var(--ink); background: #f3ead6; border: 1px solid #e4d4ad; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+    .id-btn:hover { background: #ecdcb8; }
+
+    .empty-state { text-align: center; padding: 48px 24px; color: var(--muted); }
+    .empty-state p { font-size: 15px; }
+
+    .btn-delete { display: inline-block; padding: 5px 12px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; color: #b91c1c; background: #fef2f2; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+    .btn-delete:hover { background: #fecaca; }
+    .delete-form { display: inline; margin: 0; padding: 0; }
+
+    /* ID viewer modal */
+    .id-overlay { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(26,26,24,0.7); align-items: center; justify-content: center; padding: 24px; }
+    .id-overlay.open { display: flex; }
+    .id-modal { background: var(--white); border-radius: 10px; width: 100%; max-width: 860px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 70px rgba(0,0,0,0.4); }
+    .id-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #e0ddd7; }
+    .id-modal-head h3 { font-family: 'Cormorant Garamond', serif; font-size: 19px; font-weight: 600; }
+    .id-modal-head .head-actions { display: flex; align-items: center; gap: 14px; }
+    .id-modal-head a { font-size: 13px; color: var(--accent-dark); text-decoration: none; font-weight: 600; }
+    .id-close { background: none; border: none; cursor: pointer; font-size: 24px; line-height: 1; color: var(--muted); }
+    .id-close:hover { color: var(--ink); }
+    .id-body { flex: 1; overflow: auto; background: #2a2a28; display: flex; align-items: center; justify-content: center; min-height: 360px; }
+    .id-body img { max-width: 100%; max-height: 80vh; display: none; }
+    .id-body iframe { width: 100%; height: 80vh; border: none; display: none; background: #fff; }
+    .id-loading { color: #d8d4cc; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <nav class="admin-nav">
+    <a href="/admin/dashboard" class="admin-nav-brand">Hive <span>Admin</span></a>
+    <div class="admin-nav-right">
+      <span class="admin-greeting">Hello, <%= adminName %></span>
+      <a href="/admin/account">Change Password</a>
+      <a href="/admin/logout">Logout</a>
+    </div>
+  </nav>
+
+  <div class="admin-tabs">
+    <a href="/admin/dashboard" class="admin-tab">Listings</a>
+    <a href="/admin/bookings" class="admin-tab">Bookings</a>
+    <a href="/admin/applications" class="admin-tab">Applications</a>
+    <a href="/admin/paid-applications" class="admin-tab active">Paid Applications</a>
+    <a href="/admin/landlord-inquiries" class="admin-tab">Landlord Inquiries</a>
+  </div>
+
+  <main class="admin-content">
+    <div class="admin-header">
+      <h2>Paid Applications <span class="count">(<%= applications.length %>)</span></h2>
+    </div>
+
+    <% if (applications.length === 0) { %>
+      <div class="table-wrapper">
+        <div class="empty-state">
+          <p>No paid applications yet.</p>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Applicant</th>
+              <th>Contact</th>
+              <th>Emergency Contact</th>
+              <th>Photo ID</th>
+              <th>Paid</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% applications.forEach(function(app) {
+                 var a = app.answers || {};
+                 var frontPdf = (a.id_front_path || '').toLowerCase().endsWith('.pdf');
+                 var backPdf = (a.id_back_path || '').toLowerCase().endsWith('.pdf');
+                 var name = app.full_name || ((a.first_name || '') + ' ' + (a.last_name || '')).trim();
+            %>
+            <tr>
+              <td class="app-name"><%= name %></td>
+              <td>
+                <div><%= app.email %></div>
+                <% if (app.phone) { %><div class="sub"><%= app.phone %></div><% } %>
+              </td>
+              <td>
+                <div><%= a.emergency_contact_name || '—' %><% if (a.emergency_contact_relationship) { %> <span class="sub">(<%= a.emergency_contact_relationship %>)</span><% } %></div>
+                <% if (a.emergency_contact_phone) { %><div class="sub"><%= a.emergency_contact_phone %></div><% } %>
+                <% if (a.emergency_contact_email) { %><div class="sub"><%= a.emergency_contact_email %></div><% } %>
+              </td>
+              <td>
+                <% if (a.id_front_path) { %>
+                  <button type="button" class="id-btn" onclick="viewId(<%= app.id %>, 'front', <%= frontPdf %>, '<%= name.replace(/'/g, "") %> — ID Front')">Front</button>
+                <% } %>
+                <% if (a.id_back_path) { %>
+                  <button type="button" class="id-btn" onclick="viewId(<%= app.id %>, 'back', <%= backPdf %>, '<%= name.replace(/'/g, "") %> — ID Back')">Back</button>
+                <% } %>
+                <% if (!a.id_front_path && !a.id_back_path) { %><span class="sub">—</span><% } %>
+              </td>
+              <td>
+                <div><span class="pill">$<%= ((app.amount_cents || 0) / 100).toFixed(2) %></span></div>
+                <% if (app.paid_at) { %><div class="app-date"><%= new Date(app.paid_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></div><% } %>
+              </td>
+              <td>
+                <form class="delete-form" action="/admin/paid-applications/<%= app.id %>/delete" method="POST" onsubmit="return confirm('Delete this application? This does not refund the payment.')">
+                  <button type="submit" class="btn-delete">Delete</button>
+                </form>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </main>
+
+  <!-- ID viewer modal -->
+  <div class="id-overlay" id="id-overlay">
+    <div class="id-modal">
+      <div class="id-modal-head">
+        <h3 id="id-title">Photo ID</h3>
+        <div class="head-actions">
+          <a id="id-open-tab" href="#" target="_blank" rel="noopener">Open in new tab ↗</a>
+          <button type="button" class="id-close" id="id-close" aria-label="Close">&times;</button>
+        </div>
+      </div>
+      <div class="id-body">
+        <span class="id-loading" id="id-loading">Loading…</span>
+        <img id="id-img" alt="Photo ID">
+        <iframe id="id-frame" title="Photo ID"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var overlay = document.getElementById('id-overlay');
+    var img = document.getElementById('id-img');
+    var frame = document.getElementById('id-frame');
+    var loading = document.getElementById('id-loading');
+    var titleEl = document.getElementById('id-title');
+    var openTab = document.getElementById('id-open-tab');
+
+    function viewId(appId, side, isPdf, label) {
+      var url = '/admin/paid-applications/' + appId + '/id/' + side;
+      titleEl.textContent = label;
+      openTab.href = url;
+      img.style.display = 'none'; frame.style.display = 'none';
+      loading.style.display = 'block';
+      img.removeAttribute('src'); frame.removeAttribute('src');
+
+      if (isPdf) {
+        frame.onload = function () { loading.style.display = 'none'; frame.style.display = 'block'; };
+        frame.src = url;
+      } else {
+        img.onload = function () { loading.style.display = 'none'; img.style.display = 'block'; };
+        img.onerror = function () { loading.textContent = 'Could not load image.'; };
+        img.src = url;
+      }
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeId() {
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+      img.removeAttribute('src'); frame.removeAttribute('src');
+      loading.textContent = 'Loading…';
+    }
+    document.getElementById('id-close').addEventListener('click', closeId);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) closeId(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeId(); });
+  </script>
+</body>
+</html>

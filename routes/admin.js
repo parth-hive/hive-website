@@ -5,7 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const pool = require('../db/pool');
 const { requireAdmin } = require('../middleware/auth');
-const { storeImage } = require('../utils/storage');
+const { storeImage, signedPrivateUrl } = require('../utils/storage');
 
 // --- Multer config for image uploads ---
 // Files are kept in memory, then handed to storeImage() which writes them to
@@ -407,6 +407,50 @@ router.post('/applications/:id/delete', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('Delete application error:', err);
     res.redirect('/admin/applications');
+  }
+});
+
+// --- Paid Applications Tab (tenant applications that paid the $20 fee) ---
+router.get('/paid-applications', requireAdmin, async (req, res) => {
+  try {
+    const { rows: applications } = await pool.query(
+      `SELECT * FROM tenant_applications
+        WHERE payment_status = 'paid'
+        ORDER BY paid_at DESC NULLS LAST, created_at DESC`
+    );
+    res.render('admin/paid-applications', { applications, adminName: req.session.adminName });
+  } catch (err) {
+    console.error('Paid applications error:', err);
+    res.render('admin/paid-applications', { applications: [], adminName: req.session.adminName });
+  }
+});
+
+// Stream a fresh, short-lived signed URL for an applicant's photo ID. The browser
+// follows the redirect to view it; the raw private path never reaches the client.
+router.get('/paid-applications/:id/id/:side', requireAdmin, async (req, res) => {
+  try {
+    const { id, side } = req.params;
+    if (!['front', 'back'].includes(side)) return res.status(400).send('Invalid side');
+    const { rows } = await pool.query('SELECT answers FROM tenant_applications WHERE id = $1', [id]);
+    if (!rows.length) return res.status(404).send('Application not found');
+    const objectPath = rows[0].answers && rows[0].answers['id_' + side + '_path'];
+    if (!objectPath) return res.status(404).send('No ID on file');
+    const url = await signedPrivateUrl(objectPath, 300); // 5-minute link
+    if (!url) return res.status(404).send('ID unavailable');
+    res.redirect(url);
+  } catch (err) {
+    console.error('ID view error:', err);
+    res.status(500).send('Could not load ID');
+  }
+});
+
+router.post('/paid-applications/:id/delete', requireAdmin, async (req, res) => {
+  try {
+    await pool.query(`DELETE FROM tenant_applications WHERE id = $1`, [req.params.id]);
+    res.redirect('/admin/paid-applications');
+  } catch (err) {
+    console.error('Delete paid application error:', err);
+    res.redirect('/admin/paid-applications');
   }
 });
 

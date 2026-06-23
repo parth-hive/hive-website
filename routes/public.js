@@ -1,7 +1,10 @@
 const express = require('express');
+const path = require('path');
+const multer = require('multer');
 const router = express.Router();
 const pool = require('../db/pool');
 const { getGoogleReviews } = require('../utils/googleReviews');
+const { storePrivateFile, signedPrivateUrl } = require('../utils/storage');
 
 // Stripe client for the paid tenant application. Null when no secret key is
 // configured, so the apply-now page degrades gracefully instead of crashing.
@@ -9,6 +12,20 @@ const stripe = process.env.STRIPE_SECRET_KEY
   ? require('stripe')(process.env.STRIPE_SECRET_KEY)
   : null;
 const APPLICATION_FEE_CENTS = parseInt(process.env.APPLICATION_FEE_CENTS || '2000', 10);
+
+// Photo-ID uploads kept in memory, then pushed to the PRIVATE bucket. Accepts
+// images + PDF, 10 MB max per file.
+const idUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|webp|pdf/;
+    const ext = allowed.test(path.extname(file.originalname).toLowerCase());
+    const mime = allowed.test(file.mimetype);
+    if (ext || mime) return cb(null, true);
+    cb(new Error('Photo ID must be an image (JPEG, PNG, WebP) or PDF.'));
+  }
+});
 
 // All outbound mail is sent from the Hive domain (verified in Resend).
 const MAIL_FROM = process.env.MAIL_FROM || 'Hive <vineet.dutta@hiveny.com>';
@@ -235,10 +252,6 @@ router.post('/apply', async (req, res) => {
 // which verifies payment, finalizes the application, and emails confirmations.
 // =====================================================================
 
-// Fields captured outside the free-form `answers` JSON (the final field list
-// is TBD — every other posted field is stored in `answers` automatically).
-const APPLICATION_BASE_FIELDS = ['full_name', 'email', 'phone'];
-
 router.get('/apply-now', (req, res) => {
   res.render('public/apply-now', {
     feeCents: APPLICATION_FEE_CENTS,
@@ -246,35 +259,74 @@ router.get('/apply-now', (req, res) => {
   });
 });
 
+// Parse the two ID files (multipart), converting multer errors into JSON.
+const idFields = idUpload.fields([{ name: 'id_front', maxCount: 1 }, { name: 'id_back', maxCount: 1 }]);
+function handleIdUpload(req, res, next) {
+  idFields(req, res, (err) => {
+    if (err) {
+      const msg = err.code === 'LIMIT_FILE_SIZE' ? 'Each photo ID must be 10 MB or smaller.' : (err.message || 'File upload failed.');
+      return res.status(400).json({ error: msg });
+    }
+    next();
+  });
+}
+
+const isEmail = (s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s);
+
 // Create a pending application + an embedded Checkout session.
-router.post('/apply-now/session', async (req, res) => {
+router.post('/apply-now/session', handleIdUpload, async (req, res) => {
   try {
     if (!stripe) {
       return res.status(503).json({ error: 'Payments are not configured yet. Please try again later.' });
     }
     const body = req.body || {};
-    const full_name = (body.full_name || '').trim();
-    const email = (body.email || '').trim();
-    const phone = (body.phone || '').trim();
+    const f = (k) => (body[k] || '').trim();
+    const first_name = f('first_name');
+    const last_name = f('last_name');
+    const email = f('email');
+    const phone = f('phone');
+    const ec_name = f('emergency_contact_name');
+    const ec_phone = f('emergency_contact_phone');
+    const ec_email = f('emergency_contact_email');
+    const ec_relationship = f('emergency_contact_relationship');
+    const idFront = req.files && req.files.id_front && req.files.id_front[0];
+    const idBack = req.files && req.files.id_back && req.files.id_back[0];
 
-    if (!full_name || !email) {
-      return res.status(400).json({ error: 'Please provide your name and email.' });
+    // All fields are mandatory.
+    if (!first_name || !last_name || !email || !phone || !ec_name || !ec_phone || !ec_email || !ec_relationship) {
+      return res.status(400).json({ error: 'Please fill in all required fields.' });
     }
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      return res.status(400).json({ error: 'Please provide a valid email address.' });
+    if (!idFront || !idBack) {
+      return res.status(400).json({ error: 'Please upload both the front and back of your photo ID.' });
+    }
+    if (!isEmail(email)) return res.status(400).json({ error: 'Please provide a valid email address.' });
+    if (!isEmail(ec_email)) return res.status(400).json({ error: 'Please provide a valid emergency contact email.' });
+
+    // Store the sensitive ID images in the private bucket (paths, not public URLs).
+    let id_front_path, id_back_path;
+    try {
+      id_front_path = await storePrivateFile(idFront, 'pending');
+      id_back_path = await storePrivateFile(idBack, 'pending');
+    } catch (upErr) {
+      console.error('ID upload failed:', upErr.message);
+      return res.status(500).json({ error: 'Could not upload your photo ID. Please try again.' });
     }
 
-    // Everything that isn't a known base field is stored as a flexible answer.
-    const answers = {};
-    for (const [k, v] of Object.entries(body)) {
-      if (!APPLICATION_BASE_FIELDS.includes(k)) answers[k] = v;
-    }
+    const full_name = `${first_name} ${last_name}`;
+    const answers = {
+      first_name, last_name,
+      emergency_contact_name: ec_name,
+      emergency_contact_phone: ec_phone,
+      emergency_contact_email: ec_email,
+      emergency_contact_relationship: ec_relationship,
+      id_front_path, id_back_path
+    };
 
     const { rows } = await pool.query(
       `INSERT INTO tenant_applications (full_name, email, phone, answers, amount_cents, payment_status)
        VALUES ($1, $2, $3, $4, $5, 'pending')
        RETURNING id`,
-      [full_name, email, phone || null, answers, APPLICATION_FEE_CENTS]
+      [full_name, email, phone, answers, APPLICATION_FEE_CENTS]
     );
     const appId = rows[0].id;
 
@@ -348,9 +400,12 @@ router.get('/apply-now/complete', async (req, res) => {
 
     // Notify the master inbox (best-effort).
     try {
-      const answerRows = Object.entries(app.answers || {})
-        .map(([k, v]) => `<tr><td style="padding:10px;border-bottom:1px solid #eee;font-weight:bold;width:160px;text-transform:capitalize;">${k.replace(/_/g, ' ')}</td><td style="padding:10px;border-bottom:1px solid #eee;">${Array.isArray(v) ? v.join(', ') : v}</td></tr>`)
-        .join('');
+      const a = app.answers || {};
+      const row = (label, value) => `<tr><td style="padding:10px;border-bottom:1px solid #eee;font-weight:bold;width:200px;">${label}</td><td style="padding:10px;border-bottom:1px solid #eee;">${value || 'Not provided'}</td></tr>`;
+      // Short-lived signed links so the admin can view the photo IDs (private bucket).
+      const frontLink = await signedPrivateUrl(a.id_front_path).catch(() => null);
+      const backLink = await signedPrivateUrl(a.id_back_path).catch(() => null);
+      const idCell = (url) => url ? `<a href="${url}" style="color:#d4920b;">View (link valid 7 days)</a>` : 'Uploaded (open in admin)';
       await sendMail({
         to: NOTIFY_EMAIL,
         replyTo: app.email,
@@ -358,10 +413,16 @@ router.get('/apply-now/complete', async (req, res) => {
         html: `
           <h2>New Tenant Application (Paid — $${(APPLICATION_FEE_CENTS / 100).toFixed(2)})</h2>
           <table style="border-collapse:collapse;width:100%;max-width:600px;">
-            <tr><td style="padding:10px;border-bottom:1px solid #eee;font-weight:bold;width:160px;">Name</td><td style="padding:10px;border-bottom:1px solid #eee;">${app.full_name}</td></tr>
-            <tr><td style="padding:10px;border-bottom:1px solid #eee;font-weight:bold;">Email</td><td style="padding:10px;border-bottom:1px solid #eee;">${app.email}</td></tr>
-            <tr><td style="padding:10px;border-bottom:1px solid #eee;font-weight:bold;">Phone</td><td style="padding:10px;border-bottom:1px solid #eee;">${app.phone || 'Not provided'}</td></tr>
-            ${answerRows}
+            ${row('First Name', a.first_name)}
+            ${row('Last Name', a.last_name)}
+            ${row('Email', app.email)}
+            ${row('Phone', app.phone)}
+            ${row('Photo ID — Front', idCell(frontLink))}
+            ${row('Photo ID — Back', idCell(backLink))}
+            ${row('Emergency Contact', a.emergency_contact_name)}
+            ${row('Emergency — Phone', a.emergency_contact_phone)}
+            ${row('Emergency — Email', a.emergency_contact_email)}
+            ${row('Emergency — Relationship', a.emergency_contact_relationship)}
           </table>
           <p style="margin-top:20px;color:#888;font-size:12px;">Payment confirmed via Stripe · Application #${app.id}</p>`
       });

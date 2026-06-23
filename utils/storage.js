@@ -46,4 +46,35 @@ async function storeImage(file) {
   return '/uploads/' + name;
 }
 
-module.exports = { storeImage, storageEnabled: !!supabase };
+// Private bucket for sensitive uploads (e.g. applicant photo IDs). Never public —
+// objects are retrieved by admins via short-lived signed URLs. Stores and returns
+// the object *path* (not a public URL).
+const PRIVATE_BUCKET = process.env.SUPABASE_PRIVATE_BUCKET || 'applicant-ids';
+
+async function storePrivateFile(file, prefix) {
+  const name = (prefix ? prefix.replace(/[^a-z0-9/_-]/gi, '') + '/' : '') + uniqueName(file.originalname);
+  if (supabase) {
+    const { error } = await supabase.storage.from(PRIVATE_BUCKET).upload(name, file.buffer, {
+      contentType: file.mimetype,
+      upsert: false
+    });
+    if (error) throw new Error('Private upload failed: ' + error.message);
+    return name; // store the object path; resolve to a signed URL on demand
+  }
+  // Local fallback (dev only) — keep IDs out of the public uploads dir.
+  const dir = path.join(__dirname, '..', 'private_uploads');
+  fs.mkdirSync(path.join(dir, path.dirname(name)), { recursive: true });
+  fs.writeFileSync(path.join(dir, name), file.buffer);
+  return 'local:' + name;
+}
+
+// Resolve a stored private path to a temporary signed URL (default 7 days).
+async function signedPrivateUrl(objectPath, expiresInSeconds = 7 * 24 * 60 * 60) {
+  if (!objectPath || objectPath.startsWith('local:')) return null;
+  if (!supabase) return null;
+  const { data, error } = await supabase.storage.from(PRIVATE_BUCKET).createSignedUrl(objectPath, expiresInSeconds);
+  if (error) return null;
+  return data.signedUrl;
+}
+
+module.exports = { storeImage, storePrivateFile, signedPrivateUrl, storageEnabled: !!supabase, PRIVATE_BUCKET };
