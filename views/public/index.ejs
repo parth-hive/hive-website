@@ -261,10 +261,11 @@ body {
 }
 .btn-outline:hover {}
 
-/* Side stats */
+/* Side stats — align the right edge to the centered 1280px content container
+   (not the viewport edge) so they line up with the nav, headline and buttons. */
 .hero-stats {
   position: absolute;
-  right: clamp(24px, 5vw, 80px);
+  right: calc(max(0px, (100vw - 1280px) / 2) + clamp(24px, 5vw, 80px));
   bottom: clamp(60px, 10vh, 120px);
   z-index: 2;
   display: flex;
