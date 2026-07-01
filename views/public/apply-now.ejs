@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Apply Now — Hive</title>
+<title>Apply Now | Hive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://js.stripe.com/v3/"></script>
@@ -47,7 +47,7 @@ body {
   transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .nav .container { display: flex; align-items: center; justify-content: space-between; }
-.nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+.nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; transform: scale(1.25); transform-origin: left center; }
 .nav-logo svg { flex-shrink: 0; }
 .nav-logo .logo-text { display: flex; flex-direction: column; line-height: 1; }
 .nav-logo .logo-name {
@@ -56,7 +56,7 @@ body {
 }
 .nav-logo .logo-tag {
   font-family: var(--sans); font-size: 0.48rem; font-weight: 500;
-  letter-spacing: 0.14em; text-transform: uppercase; margin-top: 3px;
+  letter-spacing: 0.14em; text-transform: uppercase; margin-top: 6px;
   color: var(--ink); opacity: 0.5;
 }
 .nav-links { display: flex; gap: 36px; align-items: center; }
@@ -369,7 +369,7 @@ body {
 <div class="checkout-overlay" id="checkout-overlay">
   <div class="checkout-modal">
     <div class="checkout-modal-head">
-      <h3>Application Fee — $<%= (feeCents/100).toFixed(2) %></h3>
+      <h3>Application Fee: $<%= (feeCents/100).toFixed(2) %></h3>
       <button type="button" class="checkout-close" id="checkout-close" aria-label="Close">&times;</button>
     </div>
     <div id="checkout"></div>
@@ -401,7 +401,7 @@ body {
       </div>
       <div class="footer-col">
         <h4>Support</h4>
-        <a href="/partners/apply">Contact Us</a>
+        <a href="/contact">Contact Us</a>
         <a href="#">FAQ</a>
         <a href="/partners">Partner With Us</a>
         <a href="#">Terms of Service</a>

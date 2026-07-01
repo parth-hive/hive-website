@@ -50,7 +50,8 @@ async function init() {
       `ALTER TABLE listings ADD COLUMN IF NOT EXISTS address VARCHAR(300)`,
       `ALTER TABLE listings ADD COLUMN IF NOT EXISTS transit TEXT`,
       `ALTER TABLE listings ADD COLUMN IF NOT EXISTS floor_plan_image VARCHAR(500)`,
-      `ALTER TABLE listings ADD COLUMN IF NOT EXISTS location VARCHAR(100) DEFAULT 'New York'`
+      `ALTER TABLE listings ADD COLUMN IF NOT EXISTS location VARCHAR(100) DEFAULT 'New York'`,
+      `ALTER TABLE listings ADD COLUMN IF NOT EXISTS key_amenities TEXT[] DEFAULT '{}'`
     ];
 
     for (const sql of newColumns) {

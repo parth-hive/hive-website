@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Partner With Us | Hive</title>
+<title>Contact Us | Hive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -375,9 +375,9 @@ body {
 <!-- PAGE HEADER -->
 <section class="page-header">
   <div class="container">
-    <div class="section-tag">For Landlords</div>
-    <h1>Partner With <em>Hive.</em></h1>
-    <p>Share your property details and our partnerships team will reach out with a customized proposal to maximize your rental income.</p>
+    <div class="section-tag">Contact</div>
+    <h1>Get in <em>Touch.</em></h1>
+    <p>Have a question about a listing, your application, or anything else? Send us a message and our team will get back to you shortly.</p>
   </div>
 </section>
 
@@ -387,14 +387,14 @@ body {
     <div class="apply-inner">
       <% if (typeof success !== 'undefined' && success) { %>
       <div class="apply-success">
-        <h2>Inquiry <em>Received.</em></h2>
-        <p>Thank you for your interest in partnering with Hive. Our team will review your information and reach out shortly with a customized proposal.</p>
-        <a href="/partners">Back to Partners <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.3"/></svg></a>
+        <h2>Message <em>Received.</em></h2>
+        <p>Thank you for reaching out to Hive. We've received your message and our team will get back to you shortly.</p>
+        <a href="/">Back to Home <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.3"/></svg></a>
       </div>
       <% } else { %>
-      <h2>Tell Us About Your <em>Property.</em></h2>
-      <p class="apply-intro">Fill out the form below and our partnerships team will get back to you with a tailored proposal.</p>
-      <form class="apply-form" action="/partners/apply" method="POST">
+      <h2>Send Us a <em>Message.</em></h2>
+      <p class="apply-intro">Fill out the form below and we'll get back to you as soon as we can.</p>
+      <form class="apply-form" action="/contact" method="POST">
         <div class="form-row">
           <div class="form-group">
             <label>Full Name <span class="required">*</span></label>
@@ -406,29 +406,19 @@ body {
           </div>
         </div>
         <div class="form-group">
-          <label>Phone <span class="required">*</span></label>
-          <input type="tel" name="phone" placeholder="(555) 123-4567" required>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Property Location <span class="required">*</span></label>
-            <input type="text" name="property_location" placeholder="City, State (e.g. New York, NY)" required>
-          </div>
-          <div class="form-group">
-            <label>Number of Units</label>
-            <input type="text" name="num_units" placeholder="e.g. 1, 5, 20+">
-          </div>
+          <label>Phone</label>
+          <input type="tel" name="phone" placeholder="(555) 123-4567">
         </div>
         <div class="form-group">
-          <label>Tell us about your property and what you're looking for <span class="required">*</span></label>
-          <textarea name="message" placeholder="Describe your property, current rental situation, and what you're hoping Hive can help with." required></textarea>
+          <label>Subject</label>
+          <input type="text" name="subject" placeholder="What's this about?">
         </div>
         <div class="form-group">
-          <label>How did you hear about Hive?</label>
-          <input type="text" name="referral_source" placeholder="Google, referral, social media, etc.">
+          <label>Message <span class="required">*</span></label>
+          <textarea name="message" placeholder="How can we help?" required></textarea>
         </div>
         <button type="submit" class="apply-submit">
-          Submit Inquiry
+          Send Message
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.3"/></svg>
         </button>
       </form>

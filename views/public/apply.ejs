@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Apply — Hive</title>
+<title>Apply | Hive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -50,6 +50,7 @@ body {
 }
 .nav-logo {
   display: flex; align-items: center; gap: 12px; text-decoration: none;
+  transform: scale(1.25); transform-origin: left center;
 }
 .nav-logo svg { flex-shrink: 0; }
 .nav-logo .logo-text { display: flex; flex-direction: column; line-height: 1; }
@@ -59,7 +60,7 @@ body {
 }
 .nav-logo .logo-tag {
   font-family: var(--sans); font-size: 0.48rem; font-weight: 500;
-  letter-spacing: 0.14em; text-transform: uppercase; margin-top: 3px;
+  letter-spacing: 0.14em; text-transform: uppercase; margin-top: 6px;
   color: var(--ink); opacity: 0.5;
 }
 .nav-links { display: flex; gap: 36px; align-items: center; }
@@ -168,6 +169,23 @@ body {
   margin-bottom: 40px;
 }
 .apply-form { display: flex; flex-direction: column; gap: 28px; }
+.apply-booking {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 24px;
+  background: var(--cream);
+  border: 1px solid var(--warm);
+  border-left: 3px solid var(--accent);
+}
+.apply-booking-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+.apply-booking-label {
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+}
+.apply-booking-value {
+  font-family: var(--serif); font-size: 1.05rem; color: var(--ink); text-align: right;
+}
 .form-group {
   display: flex;
   flex-direction: column;
@@ -384,6 +402,32 @@ body {
       <h2>Tell Us About <em>Yourself.</em></h2>
       <p class="apply-intro">Fill out the form below and our team will reach out to help you find the perfect home.</p>
       <form class="apply-form" action="/apply" method="POST">
+        <% if (typeof prefill !== 'undefined' && (prefill.property || prefill.movein || prefill.moveout)) {
+             var fmtStay = function(s) {
+               if (!s) return 'Flexible';
+               var d = new Date(s + 'T00:00:00');
+               return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+             };
+        %>
+        <div class="apply-booking">
+          <% if (prefill.property) { %>
+          <div class="apply-booking-row">
+            <span class="apply-booking-label">Property</span>
+            <span class="apply-booking-value"><%= prefill.property %></span>
+          </div>
+          <% } %>
+          <% if (prefill.movein || prefill.moveout) { %>
+          <div class="apply-booking-row">
+            <span class="apply-booking-label">Stay Dates</span>
+            <span class="apply-booking-value"><%= fmtStay(prefill.movein) %> &ndash; <%= fmtStay(prefill.moveout) %></span>
+          </div>
+          <% } %>
+        </div>
+        <input type="hidden" name="property" value="<%= prefill.property %>">
+        <input type="hidden" name="listing_id" value="<%= prefill.listing %>">
+        <input type="hidden" name="move_in" value="<%= prefill.movein %>">
+        <input type="hidden" name="move_out" value="<%= prefill.moveout %>">
+        <% } %>
         <div class="form-row">
           <div class="form-group">
             <label>Full Name <span class="required">*</span></label>
@@ -441,7 +485,7 @@ body {
       </div>
       <div class="footer-col">
         <h4>Support</h4>
-        <a href="/partners/apply">Contact Us</a>
+        <a href="/contact">Contact Us</a>
         <a href="#">FAQ</a>
         <a href="/partners">Partner With Us</a>
         <a href="#">Terms of Service</a>

@@ -54,6 +54,7 @@ app.use(session({
       `ALTER TABLE listings ADD COLUMN IF NOT EXISTS location_description TEXT`,
       `ALTER TABLE listings ADD COLUMN IF NOT EXISTS show_booking BOOLEAN DEFAULT TRUE`,
       `ALTER TABLE listings ADD COLUMN IF NOT EXISTS property_type VARCHAR(50)`,
+      `ALTER TABLE listings ADD COLUMN IF NOT EXISTS key_amenities TEXT[] DEFAULT '{}'`,
       `CREATE TABLE IF NOT EXISTS bookings (
         id SERIAL PRIMARY KEY,
         listing_id INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,

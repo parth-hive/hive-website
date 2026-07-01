@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hive — City Living, Made Simple</title>
+<title>Hive | City Living, Made Simple</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -60,6 +60,8 @@ body {
   gap: 12px;
   text-decoration: none;
   transition: color 0.4s;
+  transform: scale(1.25);
+  transform-origin: left center;
 }
 .nav-logo svg { flex-shrink: 0; }
 .nav-logo .logo-text {
@@ -83,7 +85,7 @@ body {
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  margin-top: 3px;
+  margin-top: 6px;
   color: var(--white);
   opacity: 0.5;
   transition: color 0.4s;
@@ -149,6 +151,8 @@ body {
 .nav-login:hover {}
 .nav-cta-apply { background: var(--accent) !important; border-color: var(--accent) !important; color: var(--ink) !important; }
 .nav-cta-apply:hover { background: var(--accent-dark) !important; border-color: var(--accent-dark) !important; }
+/* Keep the filled Apply Now button readable (dark ink on gold) when scrolled. */
+.nav.scrolled .nav-cta-apply { background: var(--accent) !important; border-color: var(--accent) !important; color: var(--ink) !important; }
 .nav-mobile { display: none; background: none; border: none; cursor: pointer; }
 .nav-mobile span {
   display: block; width: 24px; height: 1.5px; background: var(--white);
@@ -295,7 +299,7 @@ body {
 
 /* ===== MARQUEE ===== */
 .marquee-section {
-  padding: 22px 0;
+  padding: 12px 0;
   background: var(--ink);
   overflow: hidden;
 }
@@ -308,14 +312,14 @@ body {
   display: flex; align-items: center; gap: 12px;
   padding: 0 28px;
   font-family: var(--serif);
-  font-size: 0.95rem;
+  font-size: 1.2rem;
   font-weight: 400;
   letter-spacing: 0.06em;
   color: rgba(255,255,255,0.35);
   white-space: nowrap;
 }
 .marquee-avatar {
-  width: 24px; height: 24px;
+  width: 44px; height: 44px;
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
@@ -1809,7 +1813,7 @@ body {
         <div class="about-pillars">
           <div class="about-pillar">
             <h4>Lease On Your Terms</h4>
-            <p>Month-to-month lease terms designed for your lifestyle. Stay as long as you need — extend or move on whenever you're ready.</p>
+            <p>Month-to-month lease terms designed for your lifestyle. Stay as long as you need. Extend or move on whenever you're ready.</p>
           </div>
           <div class="about-pillar">
             <h4>Move-In Ready</h4>
@@ -1817,7 +1821,7 @@ body {
           </div>
           <div class="about-pillar">
             <h4>Transparent Pricing</h4>
-            <p>No broker fees. No guarantors required. No hidden fees. What you see is what you pay — straightforward and honest.</p>
+            <p>No broker fees. No guarantors required. No hidden fees. What you see is what you pay, straightforward and honest.</p>
           </div>
         </div>
       </div>
@@ -1853,7 +1857,7 @@ body {
   <div class="container reveal">
     <div class="cta-band-text">
       <h2>Ready To <em>Apply?</em></h2>
-      <p>Get started in minutes — no broker fees, no guarantors.</p>
+      <p>Get started in minutes. No broker fees, no guarantors.</p>
     </div>
     <a href="/apply" class="btn-primary">
       Apply Now
@@ -2003,7 +2007,7 @@ body {
       </div>
       <div class="footer-col">
         <h4>Support</h4>
-        <a href="/partners/apply">Contact Us</a>
+        <a href="/contact">Contact Us</a>
         <a href="#">FAQ</a>
         <a href="/partners">Partner With Us</a>
         <a href="#">Terms of Service</a>

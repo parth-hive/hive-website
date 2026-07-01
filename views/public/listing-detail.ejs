@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><%= publicTitle(listing) %> — Hive</title>
+<title><%= publicTitle(listing) %> | Hive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -53,6 +53,7 @@ body {
 }
 .nav-logo {
   display: flex; align-items: center; gap: 12px; text-decoration: none;
+  transform: scale(1.25); transform-origin: left center;
 }
 .nav-logo svg { flex-shrink: 0; }
 .nav-logo .logo-text { display: flex; flex-direction: column; line-height: 1; }
@@ -62,7 +63,7 @@ body {
 }
 .nav-logo .logo-tag {
   font-family: var(--sans); font-size: 0.48rem; font-weight: 500;
-  letter-spacing: 0.14em; text-transform: uppercase; margin-top: 3px;
+  letter-spacing: 0.14em; text-transform: uppercase; margin-top: 6px;
   color: var(--ink); opacity: 0.5;
 }
 .nav-links { display: flex; gap: 36px; align-items: center; }
@@ -1459,11 +1460,7 @@ span.flatpickr-weekday {
       <!-- Location -->
       <div class="detail-section reveal">
         <h2 class="detail-section-title">Location</h2>
-        <% if (listing.address) { %>
-        <p class="location-address"><%= listing.address %></p>
-        <% } else { %>
         <p class="location-address"><%= listing.neighborhood %>, <%= listing.city %>, <%= listing.state %></p>
-        <% } %>
         <p class="location-description"><%= listing.location_description ? listing.location_description : 'Located in the heart of ' + listing.neighborhood + ', this home puts you steps from the best dining, shopping, and nightlife ' + listing.city + ' has to offer.' %></p>
 
         <% if (listing.transit) { %>
@@ -1516,11 +1513,11 @@ span.flatpickr-weekday {
       <!-- Your Stay with Hive -->
       <div class="detail-section reveal">
         <h2 class="detail-section-title">Your Stay with Hive</h2>
-        <p class="stay-intro">Every Hive apartment comes fully furnished and move-in ready. No hidden fees, no broker costs — just walk in with your suitcase.</p>
+        <p class="stay-intro">Every Hive apartment comes fully furnished and move-in ready. No hidden fees, no broker costs. Just walk in with your suitcase.</p>
         <div class="stay-grid">
           <div class="stay-col">
             <h3>Fully Furnished</h3>
-            <p>Designer furniture, premium linens, and towels — everything curated so you feel at home from day one.</p>
+            <p>Designer furniture, premium linens, and towels, everything curated so you feel at home from day one.</p>
           </div>
           <div class="stay-col">
             <h3>All-Inclusive</h3>
@@ -1532,7 +1529,7 @@ span.flatpickr-weekday {
           </div>
           <div class="stay-col">
             <h3>Flexible Terms</h3>
-            <p>One month to twelve — stay as long as you need with dedicated support whenever you need it.</p>
+            <p>One month to twelve. Stay as long as you need with dedicated support whenever you need it.</p>
           </div>
         </div>
       </div>
@@ -1583,7 +1580,7 @@ span.flatpickr-weekday {
         <% if (listing.min_stay) { %>
         <p class="inquiry-minstay">Minimum stay: <%= listing.min_stay %> days</p>
         <% } %>
-        <a href="/apply" class="inquiry-btn">Book Now</a>
+        <a href="/apply" class="inquiry-btn" id="book-now-btn" data-property="<%= publicTitle(listing) %>" data-listing="<%= listing.id %>">Book Now</a>
         <a href="/apply" class="inquiry-btn-tour">Schedule a Tour</a>
         <p class="inquiry-note">No broker fees &middot; Fully furnished &middot; Flexible terms</p>
         <% } %>
@@ -1641,7 +1638,7 @@ span.flatpickr-weekday {
       </div>
       <div class="footer-col">
         <h4>Support</h4>
-        <a href="/partners/apply">Contact Us</a>
+        <a href="/contact">Contact Us</a>
         <a href="#">FAQ</a>
         <a href="/partners">Partner With Us</a>
         <a href="#">Terms of Service</a>
@@ -1774,7 +1771,7 @@ floorplanModal.addEventListener('click', function(e) {
 // Share listing
 function shareListing() {
   var url = window.location.href;
-  var title = '<%= publicTitle(listing) %> — Hive';
+  var title = '<%= publicTitle(listing) %> | Hive';
   // Try native share (mobile)
   if (navigator.share) {
     navigator.share({ title: title, url: url }).catch(function() {});
@@ -1833,6 +1830,27 @@ var moveInInput = document.getElementById('move-in');
 var moveOutInput = document.getElementById('move-out');
 var conflictBanner = document.getElementById('date-conflict-banner');
 
+// Pre-fill the stay dates from the URL (carried over from the search page).
+(function() {
+  var q = new URLSearchParams(window.location.search);
+  var mi = q.get('movein'), mo = q.get('moveout');
+  if (mi && moveInInput) moveInInput.value = mi;
+  if (mo && moveOutInput) moveOutInput.value = mo;
+})();
+
+// Keep the "Book Now" link carrying the property + currently chosen stay dates.
+function updateBookNow() {
+  var btn = document.getElementById('book-now-btn');
+  if (!btn) return;
+  var params = [
+    'property=' + encodeURIComponent(btn.dataset.property || ''),
+    'listing=' + encodeURIComponent(btn.dataset.listing || '')
+  ];
+  if (moveInInput && moveInInput.value) params.push('movein=' + encodeURIComponent(moveInInput.value));
+  if (moveOutInput && moveOutInput.value) params.push('moveout=' + encodeURIComponent(moveOutInput.value));
+  btn.setAttribute('href', '/apply?' + params.join('&'));
+}
+
 function parseDate(str) {
   if (!str) return null;
   var parts = str.split('T')[0].split('-');
@@ -1883,29 +1901,51 @@ bookedRanges.forEach(function(b) {
   }
 });
 
+// Minimum stay is 30 days: move-out must be at least 30 days after move-in.
+var MIN_STAY_DAYS = 30;
+var moveInPicker = null, moveOutPicker = null;
+function addDays(dateObj, n) {
+  var d = new Date(dateObj.getTime());
+  d.setDate(d.getDate() + n);
+  return d;
+}
+// Push the move-out picker's floor to (move-in + 30d) and bump the value if shorter.
+function enforceMinStay() {
+  if (!moveInPicker || !moveOutPicker) return;
+  var start = moveInPicker.selectedDates[0];
+  if (!start) return;
+  var minOut = addDays(start, MIN_STAY_DAYS);
+  moveOutPicker.set('minDate', minOut);
+  var end = moveOutPicker.selectedDates[0];
+  if (end && end < minOut) moveOutPicker.setDate(minOut, false);
+}
+
 // Initialize flatpickr on date inputs
 if (moveInInput && typeof flatpickr !== 'undefined') {
-  flatpickr(moveInInput, {
+  moveInPicker = flatpickr(moveInInput, {
     dateFormat: 'Y-m-d',
     disable: disabledRanges,
     minDate: 'today',
     defaultDate: moveInInput.value || null,
-    onChange: function() { checkDateConflict(); }
+    onChange: function() { enforceMinStay(); checkDateConflict(); updateBookNow(); }
   });
 }
 if (moveOutInput && typeof flatpickr !== 'undefined') {
-  flatpickr(moveOutInput, {
+  moveOutPicker = flatpickr(moveOutInput, {
     dateFormat: 'Y-m-d',
     disable: disabledRanges,
     minDate: 'today',
     defaultDate: moveOutInput.value || null,
-    onChange: function() { checkDateConflict(); }
+    onChange: function() { checkDateConflict(); updateBookNow(); }
   });
 }
 
+// Apply the 30-day floor on load (covers dates carried over from search).
+enforceMinStay();
 if (moveInInput && moveOutInput) {
   checkDateConflict();
 }
+updateBookNow();
 </script>
 </body>
 </html>

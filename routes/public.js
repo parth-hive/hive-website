@@ -186,12 +186,20 @@ router.get('/partners', async (req, res) => {
 
 // Apply page
 router.get('/apply', (req, res) => {
-  res.render('public/apply', { success: false });
+  res.render('public/apply', {
+    success: false,
+    prefill: {
+      property: req.query.property || '',
+      listing: req.query.listing || '',
+      movein: req.query.movein || '',
+      moveout: req.query.moveout || ''
+    }
+  });
 });
 
 router.post('/apply', async (req, res) => {
   try {
-    const { full_name, email, phone, about, social_media } = req.body;
+    const { full_name, email, phone, about, social_media, property, move_in, move_out } = req.body;
 
     // Save to database
     await pool.query(
@@ -199,6 +207,12 @@ router.post('/apply', async (req, res) => {
        VALUES ($1, $2, $3, $4, $5)`,
       [full_name, email, phone || null, about, social_media]
     );
+
+    // Optional booking context carried over from a listing's "Book Now" button.
+    const stayRange = (move_in || move_out) ? `${move_in || 'Flexible'} to ${move_out || 'Flexible'}` : '';
+    const bookingRows = `
+        ${property ? `<tr><td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Property</td><td style="padding: 10px; border-bottom: 1px solid #eee;">${property}</td></tr>` : ''}
+        ${stayRange ? `<tr><td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Requested Dates</td><td style="padding: 10px; border-bottom: 1px solid #eee;">${stayRange}</td></tr>` : ''}`;
 
     // Notify the master inbox with the submitted details (best-effort — already saved)
     try {
@@ -210,6 +224,7 @@ router.post('/apply', async (req, res) => {
         <h2>New Tenant Application</h2>
         <table style="border-collapse: collapse; width: 100%; max-width: 600px;">
           <tr><td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold; width: 160px;">Name</td><td style="padding: 10px; border-bottom: 1px solid #eee;">${full_name}</td></tr>
+          ${bookingRows}
           <tr><td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Email</td><td style="padding: 10px; border-bottom: 1px solid #eee;">${email}</td></tr>
           <tr><td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Phone</td><td style="padding: 10px; border-bottom: 1px solid #eee;">${phone || 'Not provided'}</td></tr>
           <tr><td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">About</td><td style="padding: 10px; border-bottom: 1px solid #eee;">${about}</td></tr>
@@ -513,6 +528,53 @@ router.post('/partners/apply', async (req, res) => {
     // Still show success if DB saved but email failed
     res.render('public/landlord-apply', { success: true });
   }
+});
+
+// Contact Us — general enquiry form (distinct from the landlord partner inquiry)
+router.get('/contact', (req, res) => {
+  res.render('public/contact', { success: false });
+});
+
+router.post('/contact', async (req, res) => {
+  const { full_name, email, phone, subject, message } = req.body;
+
+  // Notify the master inbox with the submitted details (best-effort)
+  try {
+    await sendMail({
+      to: NOTIFY_EMAIL,
+      replyTo: email,
+      subject: `New Contact Message: ${subject || full_name}`,
+      html: `
+      <h2>New Contact Message</h2>
+      <table style="border-collapse: collapse; width: 100%; max-width: 600px;">
+        <tr><td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold; width: 160px;">Name</td><td style="padding: 10px; border-bottom: 1px solid #eee;">${full_name}</td></tr>
+        <tr><td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Email</td><td style="padding: 10px; border-bottom: 1px solid #eee;">${email}</td></tr>
+        <tr><td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Phone</td><td style="padding: 10px; border-bottom: 1px solid #eee;">${phone || 'Not provided'}</td></tr>
+        <tr><td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Subject</td><td style="padding: 10px; border-bottom: 1px solid #eee;">${subject || 'Not provided'}</td></tr>
+        <tr><td style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Message</td><td style="padding: 10px; border-bottom: 1px solid #eee;">${message}</td></tr>
+      </table>
+      <p style="margin-top: 20px; color: #888; font-size: 12px;">Submitted via Hive Contact Form</p>
+    `
+    });
+  } catch (mailErr) {
+    console.error('[mail] Failed to send contact notification:', mailErr.message);
+  }
+
+  // Send a confirmation to the sender (best-effort)
+  try {
+    await sendMail({
+      to: email,
+      subject: 'We received your message',
+      html: confirmationHtml(`Thanks for reaching out, ${full_name}!`, [
+        'We have received your message and our team will get back to you shortly.',
+        'If your enquiry is time-sensitive, feel free to reply directly to this email.'
+      ])
+    });
+  } catch (mailErr) {
+    console.error('[mail] Failed to send contact confirmation:', mailErr.message);
+  }
+
+  res.render('public/contact', { success: true });
 });
 
 module.exports = router;

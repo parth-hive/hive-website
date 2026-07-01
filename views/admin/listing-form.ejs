@@ -624,9 +624,9 @@
         <div class="form-section">
           <div class="form-section-title">Basic Information</div>
           <div class="form-group">
-            <label for="title">Building / Property Name (internal — never shown publicly)</label>
+            <label for="title">Building / Property Name (internal, never shown publicly)</label>
             <input type="text" id="title" name="title" required value="<%= (listing && listing.title) ? listing.title : '' %>" placeholder="e.g. The Dominick">
-            <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Private reference only. Rooms in the same unit should share this name (it groups them). The public-facing title is generated automatically — see preview below.</div>
+            <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Private reference only. Rooms in the same unit should share this name (it groups them). The public-facing title is generated automatically. See preview below.</div>
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -639,11 +639,6 @@
                 <option value="San Francisco" <%= (listing && listing.location === 'San Francisco') ? 'selected' : '' %>>San Francisco</option>
                 <option value="Washington DC" <%= (listing && listing.location === 'Washington DC') ? 'selected' : '' %>>Washington DC</option>
                 <option value="Boston" <%= (listing && listing.location === 'Boston') ? 'selected' : '' %>>Boston</option>
-                <option value="Seattle" <%= (listing && listing.location === 'Seattle') ? 'selected' : '' %>>Seattle</option>
-                <option value="Austin" <%= (listing && listing.location === 'Austin') ? 'selected' : '' %>>Austin</option>
-                <option value="Denver" <%= (listing && listing.location === 'Denver') ? 'selected' : '' %>>Denver</option>
-                <option value="Nashville" <%= (listing && listing.location === 'Nashville') ? 'selected' : '' %>>Nashville</option>
-                <option value="Atlanta" <%= (listing && listing.location === 'Atlanta') ? 'selected' : '' %>>Atlanta</option>
               </select>
             </div>
             <div class="form-group">
