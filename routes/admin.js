@@ -24,6 +24,11 @@ const upload = multer({
 
 // --- Auth Routes ---
 
+// Bare /admin -> send to the dashboard if signed in, otherwise the login page.
+router.get('/', (req, res) => {
+  res.redirect(req.session && req.session.adminId ? '/admin/dashboard' : '/admin/login');
+});
+
 router.get('/login', (req, res) => {
   if (req.session && req.session.adminId) {
     return res.redirect('/admin/dashboard');
