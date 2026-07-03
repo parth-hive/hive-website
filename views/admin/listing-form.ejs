@@ -863,9 +863,8 @@
           <div class="amenity-grid">
             <% var buildingAmenitiesList = [
               '24/7 Doorman', 'Fitness Center', 'Rooftop Terrace', 'Package Room',
-              'Bike Storage', 'Laundry Room', 'Elevator', 'Courtyard',
-              'Concierge', 'Parking Garage', 'Swimming Pool', 'Pet Friendly',
-              'Storage Units', 'Business Center', 'Children\'s Playroom', 'Garden'
+              'Laundry Room', 'Elevator', 'Courtyard', 'Parking Garage',
+              'Swimming Pool'
             ]; %>
             <% var existingBuildingAmenities = (listing && listing.building_amenities) ? listing.building_amenities : []; %>
             <% buildingAmenitiesList.forEach(function(amenity) { %>
@@ -877,7 +876,7 @@
           </div>
           <div class="form-group" style="margin-top: 12px;">
             <label for="building_amenities_custom">Other Building Amenities</label>
-            <input type="text" id="building_amenities_custom" name="building_amenities_custom" placeholder="e.g. Valet, Wine Cellar" value="<%= existingBuildingAmenities.filter(function(a) { return ['24/7 Doorman','Fitness Center','Rooftop Terrace','Package Room','Bike Storage','Laundry Room','Elevator','Courtyard','Concierge','Parking Garage','Swimming Pool','Pet Friendly','Storage Units','Business Center','Children\'s Playroom','Garden'].indexOf(a) === -1; }).join(', ') %>">
+            <input type="text" id="building_amenities_custom" name="building_amenities_custom" placeholder="e.g. Valet, Wine Cellar" value="<%= existingBuildingAmenities.filter(function(a) { return ['24/7 Doorman','Fitness Center','Rooftop Terrace','Package Room','Laundry Room','Elevator','Courtyard','Parking Garage','Swimming Pool'].indexOf(a) === -1; }).join(', ') %>">
             <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Add any extra building amenities not listed above, separated by commas</div>
           </div>
         </div>
