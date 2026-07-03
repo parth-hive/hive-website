@@ -71,6 +71,10 @@ CREATE TABLE IF NOT EXISTS applications (
   phone        VARCHAR(50),
   about        TEXT,
   social_media TEXT,
+  -- Booking context carried over from a listing's "Book Now" button (optional)
+  property     VARCHAR(300),
+  move_in      DATE,
+  move_out     DATE,
   created_at   TIMESTAMP DEFAULT NOW()
 );
 

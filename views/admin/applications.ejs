@@ -94,6 +94,7 @@
             <tr>
               <th>Name</th>
               <th>Contact</th>
+              <th>Property / Stay</th>
               <th>About</th>
               <th>Social / LinkedIn</th>
               <th>Date</th>
@@ -107,6 +108,17 @@
               <td>
                 <div><%= app.email %></div>
                 <% if (app.phone) { %><div class="app-email"><%= app.phone %></div><% } %>
+              </td>
+              <td>
+                <% if (app.property || app.move_in || app.move_out) { %>
+                  <% if (app.property) { %><div><%= app.property %></div><% } %>
+                  <% if (app.move_in || app.move_out) { %>
+                    <% const fmtStay = d => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Flexible'; %>
+                    <div class="app-email"><%= fmtStay(app.move_in) %> &rarr; <%= fmtStay(app.move_out) %></div>
+                  <% } %>
+                <% } else { %>
+                  <span class="app-email">&mdash;</span>
+                <% } %>
               </td>
               <td class="app-about"><%= app.about %></td>
               <td class="app-social">

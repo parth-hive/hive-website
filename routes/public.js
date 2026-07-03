@@ -227,11 +227,11 @@ router.post('/apply', async (req, res) => {
   try {
     const { full_name, email, phone, about, social_media, property, move_in, move_out } = req.body;
 
-    // Save to database
+    // Save to database, including any booking context from a listing's "Book Now" button
     await pool.query(
-      `INSERT INTO applications (full_name, email, phone, about, social_media)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [full_name, email, phone || null, about, social_media]
+      `INSERT INTO applications (full_name, email, phone, about, social_media, property, move_in, move_out)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [full_name, email, phone || null, about, social_media, property || null, move_in || null, move_out || null]
     );
 
     // Optional booking context carried over from a listing's "Book Now" button.
