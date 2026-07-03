@@ -556,6 +556,12 @@ router.post('/partners/apply', async (req, res) => {
   }
 });
 
+// FAQ — static page of common questions
+router.get('/faq', (req, res) => {
+  res.render('public/faq');
+});
+router.get('/faqs', (req, res) => res.redirect('/faq'));
+
 // Contact Us — general enquiry form (distinct from the landlord partner inquiry)
 router.get('/contact', (req, res) => {
   res.render('public/contact', { success: false });
