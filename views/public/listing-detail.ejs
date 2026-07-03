@@ -1565,7 +1565,7 @@ span.flatpickr-weekday {
           <div class="inquiry-availability-label">Unavailable</div>
           <% bookings.forEach(function(b) { %>
           <div class="booked-range">
-            <span class="booked-range-dates"><%= new Date(b.check_in).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %> &mdash; <%= new Date(b.check_out).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
+            <span class="booked-range-dates"><%= new Date(b.check_in).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) %> &mdash; <%= new Date(b.check_out).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) %></span>
             <span class="booked-range-tag">Booked</span>
           </div>
           <% }); %>

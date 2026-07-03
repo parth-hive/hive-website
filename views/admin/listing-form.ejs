@@ -987,8 +987,8 @@
               <% var status = today >= checkIn && today <= checkOut ? 'active' : (today < checkIn ? 'upcoming' : 'past'); %>
               <tr>
                 <td><%= b.guest_name || '—' %></td>
-                <td><%= checkIn.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
-                <td><%= checkOut.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
+                <td><%= checkIn.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) %></td>
+                <td><%= checkOut.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) %></td>
                 <td>
                   <span class="booking-status booking-<%= status %>">
                     <%= status === 'active' ? 'Active' : (status === 'upcoming' ? 'Upcoming' : 'Past') %>

@@ -145,7 +145,7 @@
               </td>
               <td>
                 <div><span class="pill">$<%= ((app.amount_cents || 0) / 100).toFixed(2) %></span></div>
-                <% if (app.paid_at) { %><div class="app-date"><%= new Date(app.paid_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></div><% } %>
+                <% if (app.paid_at) { %><div class="app-date"><%= new Date(app.paid_at).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) %></div><% } %>
               </td>
               <td>
                 <form class="delete-form" action="/admin/paid-applications/<%= app.id %>/delete" method="POST" onsubmit="return confirm('Delete this application? This does not refund the payment.')">

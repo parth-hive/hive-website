@@ -1763,7 +1763,7 @@ body {
     <h3><%= publicTitle(listing) %></h3>
     <p class="fp-card-details">
       <% if (listing.available_from && listing.available_to) { %>
-      <%= new Date(listing.available_from).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) %> – <%= new Date(listing.available_to).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) %> &nbsp;|&nbsp;
+      <%= new Date(listing.available_from).toLocaleDateString('en-US', {month: '2-digit', day: '2-digit', year: '2-digit'}) %> – <%= new Date(listing.available_to).toLocaleDateString('en-US', {month: '2-digit', day: '2-digit', year: '2-digit'}) %> &nbsp;|&nbsp;
       <% } %>
       $<%= listing.price_monthly.toLocaleString() %>/mo &nbsp;|&nbsp;
       <%= listing.bedrooms === 0 ? 'Studio' : listing.bedrooms + ' BR' %> &nbsp;

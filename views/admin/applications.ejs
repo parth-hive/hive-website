@@ -119,7 +119,7 @@
                 <% if (app.property || app.move_in || app.move_out) { %>
                   <% if (app.property) { %><div><%= app.property %></div><% } %>
                   <% if (app.move_in || app.move_out) { %>
-                    <% const fmtStay = d => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Flexible'; %>
+                    <% const fmtStay = d => d ? new Date(d).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) : 'Flexible'; %>
                     <div class="app-email"><%= fmtStay(app.move_in) %> &rarr; <%= fmtStay(app.move_out) %></div>
                   <% } %>
                 <% } else { %>
@@ -134,7 +134,7 @@
                   <%= app.social_media %>
                 <% } %>
               </td>
-              <td class="app-date"><%= new Date(app.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
+              <td class="app-date"><%= new Date(app.created_at).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) %></td>
               <td>
                 <form class="delete-form" action="/admin/applications/<%= app.id %>/delete" method="POST" onsubmit="return confirm('Delete this application?')">
                   <button type="submit" class="btn-delete">Delete</button>

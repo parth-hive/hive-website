@@ -122,7 +122,7 @@
               </td>
               <td class="inq-message"><%= inq.message || '—' %></td>
               <td class="inq-detail"><%= inq.referral_source || '—' %></td>
-              <td class="inq-date"><%= new Date(inq.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
+              <td class="inq-date"><%= new Date(inq.created_at).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) %></td>
               <td>
                 <form class="delete-form" action="/admin/landlord-inquiries/<%= inq.id %>/delete" method="POST" onsubmit="return confirm('Delete this inquiry?')">
                   <button type="submit" class="btn-delete">Delete</button>

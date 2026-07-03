@@ -112,8 +112,8 @@
                 <a href="/admin/listings/<%= booking.listing_id %>/edit"><%= booking.listing_title || 'Listing #' + booking.listing_id %></a>
               </td>
               <td class="booking-guest"><%= booking.guest_name || '—' %></td>
-              <td class="booking-dates"><%= new Date(booking.check_in).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
-              <td class="booking-dates"><%= new Date(booking.check_out).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
+              <td class="booking-dates"><%= new Date(booking.check_in).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) %></td>
+              <td class="booking-dates"><%= new Date(booking.check_out).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) %></td>
               <td>
                 <%
                   var now = new Date();
