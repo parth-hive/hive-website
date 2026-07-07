@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const pool = require('../db/pool');
 const PgRateLimitStore = require('../utils/pgRateLimitStore');
+const { mintFormToken, checkFormGuards, turnstileEnabled } = require('../utils/formGuard');
 const { getGoogleReviews } = require('../utils/googleReviews');
 const { storePrivateFile, signedPrivateUrl } = require('../utils/storage');
 
@@ -169,6 +170,14 @@ function firstError(checks) {
 let footerCitiesCache = { cities: [], fetchedAt: 0 };
 const FOOTER_CITIES_TTL_MS = 5 * 60 * 1000;
 
+// Every form view embeds a fresh signed timestamp token (see utils/formGuard),
+// and renders the Turnstile widget when its keys are configured.
+router.use((req, res, next) => {
+  res.locals.formToken = mintFormToken();
+  res.locals.turnstileSiteKey = turnstileEnabled() ? process.env.TURNSTILE_SITE_KEY : null;
+  next();
+});
+
 router.use(async (req, res, next) => {
   const now = Date.now();
   if (now - footerCitiesCache.fetchedAt > FOOTER_CITIES_TTL_MS) {
@@ -319,6 +328,25 @@ router.get('/apply', (req, res) => {
 router.post('/apply', applyLimiter, async (req, res) => {
   try {
     const { full_name, email, phone, about, social_media, property, move_in, move_out } = req.body;
+
+    const guard = await checkFormGuards(req);
+    if (guard.verdict === 'spam') {
+      // Fake success: don't save or email, and don't tell the bot which check tripped.
+      console.warn(`[formGuard] Dropped /apply submission (${guard.reason}) from ${req.ip}`);
+      return res.render('public/apply', { success: true });
+    }
+    if (guard.verdict === 'retry') {
+      return res.status(400).render('public/apply', {
+        success: false,
+        error: guard.message,
+        prefill: {
+          property: property || '',
+          listing: req.body.listing_id || '',
+          movein: move_in || '',
+          moveout: move_out || ''
+        }
+      });
+    }
 
     const error = firstError([
       [isName(full_name || ''), 'Please enter your full name (letters only, at least 2 characters).'],
@@ -622,6 +650,15 @@ router.post('/partners/apply', landlordLimiter, async (req, res) => {
   try {
     const { full_name, email, phone, property_location, num_units, property_type, message, referral_source } = req.body;
 
+    const guard = await checkFormGuards(req);
+    if (guard.verdict === 'spam') {
+      console.warn(`[formGuard] Dropped /partners/apply submission (${guard.reason}) from ${req.ip}`);
+      return res.render('public/landlord-apply', { success: true });
+    }
+    if (guard.verdict === 'retry') {
+      return res.status(400).render('public/landlord-apply', { success: false, error: guard.message });
+    }
+
     const error = firstError([
       [isName(full_name || ''), 'Please enter your full name (letters only, at least 2 characters).'],
       [isEmail(email || ''), 'Please enter a valid email address.'],
@@ -702,6 +739,15 @@ router.get('/contact', (req, res) => {
 
 router.post('/contact', contactLimiter, async (req, res) => {
   const { full_name, email, phone, subject, message } = req.body;
+
+  const guard = await checkFormGuards(req);
+  if (guard.verdict === 'spam') {
+    console.warn(`[formGuard] Dropped /contact submission (${guard.reason}) from ${req.ip}`);
+    return res.render('public/contact', { success: true });
+  }
+  if (guard.verdict === 'retry') {
+    return res.status(400).render('public/contact', { success: false, error: guard.message });
+  }
 
   const error = firstError([
     [isName(full_name || ''), 'Please enter your full name (letters only, at least 2 characters).'],

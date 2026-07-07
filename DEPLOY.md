@@ -42,6 +42,8 @@ the Postgres database and image storage.
    | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | optional — form email notifications |
    | `GOOGLE_API_KEY` | optional — Drive bulk image import |
    | `GOOGLE_PLACES_API_KEY` / `GOOGLE_PLACE_ID` | optional — homepage reviews widget |
+   | `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | optional — enables Cloudflare Turnstile CAPTCHA on public forms (free at dash.cloudflare.com → Turnstile) |
+   | `FORM_TOKEN_SECRET` | optional — separate signing key for form anti-spam tokens (falls back to `SESSION_SECRET`) |
 
 4. **Deploy.** Then visit `/admin/login` and sign in with the seeded admin.
 
