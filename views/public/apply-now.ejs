@@ -159,8 +159,12 @@ body {
 .form-group textarea { min-height: 140px; resize: vertical; line-height: 1.6; }
 .form-group input::placeholder, .form-group textarea::placeholder { color: var(--stone); font-weight: 300; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+/* Let grid tracks shrink below the intrinsic width of their content —
+   without this, file inputs blow the row out past the form column. */
+.form-row .form-group { min-width: 0; }
 .form-group input[type="file"] {
   padding: 11px 14px; font-size: 0.85rem; color: var(--muted); cursor: pointer; background: var(--cream);
+  width: 100%; min-width: 0;
 }
 .form-group input[type="file"]::file-selector-button {
   font-family: var(--sans); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.06em;
