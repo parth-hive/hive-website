@@ -19,12 +19,12 @@ html { font-size: 16px; }
 body {
   font-family: var(--sans); color: var(--ink); background: var(--white);
   -webkit-font-smoothing: antialiased; min-height: 100vh;
-  display: flex; align-items: center; justify-content: center; padding: 40px 24px;
+  display: flex; align-items: center; justify-content: center; padding: 108px 24px 48px;
 }
 .result { text-align: center; max-width: 520px; }
 .result .logo {
-  display: flex; align-items: center; gap: 12px; width: fit-content;
-  text-decoration: none; margin: 0 auto 32px;
+  position: absolute; top: 28px; left: clamp(24px, 5vw, 80px);
+  display: flex; align-items: center; gap: 12px; text-decoration: none;
 }
 .result .logo svg { flex-shrink: 0; }
 .result .logo .logo-text { display: flex; flex-direction: column; line-height: 1; text-align: left; }
