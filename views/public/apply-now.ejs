@@ -289,7 +289,7 @@ body {
   <div class="container">
     <div class="apply-inner">
       <h2>Your <em>Application.</em></h2>
-      <p class="apply-intro">Tell us about yourself below. After submitting, you'll complete a secure <%= (feeCents/100).toFixed(2) %> USD application fee payment without leaving this page.</p>
+      <p class="apply-intro">Tell us about yourself below. After submitting, you'll complete a secure <%= (feeCents/100).toFixed(2) %> USD application fee payment without leaving this page, followed by a quick identity verification powered by Stripe Identity.</p>
 
       <% if (!paymentsEnabled) { %>
       <div class="config-warning">
@@ -299,7 +299,7 @@ body {
 
       <div class="fee-note">
         <span class="fee-amount">$<%= (feeCents/100).toFixed(2) %></span>
-        <span class="fee-text">One-time, non-refundable application fee, paid securely by card. Charged only after you submit the form below.</span>
+        <span class="fee-text">One-time, non-refundable application fee, paid securely by card. Charged only after you submit the form below. After payment, you'll verify your identity with your government ID via Stripe Identity.</span>
       </div>
 
       <div class="form-error" id="form-error"></div>
@@ -325,6 +325,24 @@ body {
             <input type="tel" name="phone" placeholder="(555) 123-4567" required minlength="7" maxlength="20" pattern="[0-9()+\-. ]{7,20}" title="Digits, spaces and ()+-. only, at least 7 digits">
           </div>
         </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date of Birth <span class="required">*</span></label>
+            <input type="date" name="birthdate" id="birthdate" required>
+          </div>
+          <div class="form-group">
+            <label>SSN — Last 4 Digits <span class="required">*</span></label>
+            <input type="text" name="ssn_last4" placeholder="1234" required inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="off" title="Exactly 4 digits">
+          </div>
+        </div>
+        <p class="field-hint">You must be 18 or older to apply. We only ask for the last 4 digits of your SSN — never the full number.</p>
+
+        <div class="form-group">
+          <label>LinkedIn or Instagram Profile <span class="required">*</span></label>
+          <input type="text" name="social_profile" placeholder="https://linkedin.com/in/yourname" required maxlength="300" pattern="(https?:\/\/)?(www\.)?(linkedin\.com\/(in|pub|company)\/|instagram\.com\/).+" title="A LinkedIn or Instagram profile link">
+        </div>
+        <p class="field-hint">LinkedIn preferred. An Instagram link is accepted only if your profile is open/public.</p>
 
         <div class="form-row">
           <div class="form-group">
@@ -440,6 +458,16 @@ if (navMobile) {
     }
   });
 }
+
+// Applicants must be adults: cap the birthdate picker at 18 years ago.
+(function () {
+  var dob = document.getElementById('birthdate');
+  if (dob) {
+    var d = new Date();
+    d.setFullYear(d.getFullYear() - 18);
+    dob.max = d.toISOString().slice(0, 10);
+  }
+})();
 
 // ===== Embedded Stripe Checkout =====
 (function () {

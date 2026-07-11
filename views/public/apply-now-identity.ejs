@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Application | Hive</title>
+<title>Identity Verification | Hive</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -21,16 +21,15 @@ body {
   -webkit-font-smoothing: antialiased; min-height: 100vh;
   display: flex; align-items: center; justify-content: center; padding: 40px 24px;
 }
-.result {
-  text-align: center; max-width: 520px;
-}
+.result { text-align: center; max-width: 520px; }
 .result .logo svg { margin: 0 auto 32px; display: block; }
 .result .badge {
   display: inline-flex; align-items: center; justify-content: center;
   width: 72px; height: 72px; border-radius: 50%; margin-bottom: 28px;
 }
-.result.paid .badge { background: rgba(212,146,11,0.12); }
-.result.error .badge, .result.unpaid .badge { background: #fdecea; }
+.result.verified .badge { background: rgba(212,146,11,0.12); }
+.result.processing .badge { background: #f0ede6; }
+.result.requires_input .badge, .result.error .badge { background: #fdecea; }
 .result h1 {
   font-family: var(--serif); font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 300;
   line-height: 1.15; color: var(--ink); margin-bottom: 16px;
@@ -38,6 +37,10 @@ body {
 .result h1 em { font-style: italic; color: var(--accent-text); }
 .result p {
   font-size: 1rem; font-weight: 300; color: var(--muted); line-height: 1.7; margin-bottom: 32px;
+}
+.result .reason {
+  padding: 12px 16px; background: #fdecea; border: 1px solid #f5c6c2;
+  color: #a3261c; font-size: 0.88rem; border-radius: 6px; margin-bottom: 32px; line-height: 1.6;
 }
 .result .actions a {
   display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px;
@@ -55,48 +58,43 @@ body {
       <svg width="32" height="40" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg"><circle cx="40" cy="8" r="4.5" fill="#d4920b"/><rect x="28" y="18" width="24" height="6" rx="3" fill="#d4920b"/><rect x="18" y="32" width="44" height="6" rx="3" fill="#d4920b"/><rect x="15" y="46" width="50" height="6" rx="3" fill="#d4920b"/><rect x="18" y="60" width="44" height="6" rx="3" fill="#d4920b"/><rect x="28" y="74" width="24" height="6" rx="3" fill="#d4920b"/><circle cx="40" cy="88" r="4" fill="#d4920b"/></svg>
     </a>
 
-    <% if (status === 'paid') { %>
+    <% if (status === 'verified') { %>
       <div class="badge">
         <svg width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#9a6f08" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
-      <% if (locals.identityStatus === 'verified') { %>
-        <h1>Application <em>Complete.</em></h1>
-        <p>Thank you! Your payment was successful and your identity has been verified. Our team will review your application and reach out with next steps.</p>
-        <div class="actions">
-          <a href="/properties">Browse Properties <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.3"/></svg></a>
-        </div>
-      <% } else if (locals.identityToken) { %>
-        <h1>Payment Received — <em>One Last Step.</em></h1>
-        <p>Your $<%= (applicationFeeCents/100).toFixed(2) %> application fee was processed successfully. To complete your application, please verify your identity. You'll be taken to a secure page hosted by Stripe Identity where you'll photograph your government ID and take a quick selfie — it takes about two minutes.</p>
-        <div class="actions">
-          <a href="/apply-now/identity/start?token=<%= encodeURIComponent(identityToken) %>">Verify My Identity <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.3"/></svg></a>
-          <a href="/properties" class="secondary">Browse Properties</a>
-        </div>
-      <% } else { %>
-        <h1>Application <em>Received.</em></h1>
-        <p>Thank you! Your payment was successful and your application has been submitted. We've emailed you a confirmation, and our team will review your application and reach out with next steps.</p>
-        <div class="actions">
-          <a href="/properties">Browse Properties <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.3"/></svg></a>
-        </div>
-      <% } %>
-    <% } else if (status === 'unpaid') { %>
+      <h1>Identity <em>Verified.</em></h1>
+      <p>You're all set! Your identity has been verified and your application is complete. Our team will review it and reach out with next steps.</p>
+      <div class="actions">
+        <a href="/properties">Browse Properties <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.3"/></svg></a>
+      </div>
+    <% } else if (status === 'processing') { %>
+      <div class="badge">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="#8a8378" stroke-width="2"/><path d="M12 7.5V12l3 2" stroke="#8a8378" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <h1>Verification <em>In Progress.</em></h1>
+      <p>Thanks — your documents were submitted successfully. Stripe is reviewing them now, which usually takes just a few minutes. We'll email you if anything else is needed; there's nothing more for you to do.</p>
+      <div class="actions">
+        <a href="/properties">Browse Properties <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.3"/></svg></a>
+      </div>
+    <% } else if (status === 'requires_input' || status === 'canceled') { %>
       <div class="badge">
         <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 8v5M12 16.5v.5" stroke="#a3261c" stroke-width="2.2" stroke-linecap="round"/></svg>
       </div>
-      <h1>Payment <em>Incomplete.</em></h1>
-      <p>It looks like your payment wasn't completed, so your application hasn't been submitted yet. You can try again below.</p>
+      <h1>Verification <em>Not Finished.</em></h1>
+      <p>Your identity verification wasn't completed. Your application and payment are safe — you can pick up where you left off below.</p>
+      <% if (reason) { %><div class="reason"><%= reason %></div><% } %>
       <div class="actions">
-        <a href="/apply-now">Try Again</a>
-        <a href="/" class="secondary">Back Home</a>
+        <% if (token) { %><a href="/apply-now/identity/start?token=<%= encodeURIComponent(token) %>">Try Again</a><% } %>
+        <a href="/contact" class="secondary">Contact Us</a>
       </div>
     <% } else { %>
       <div class="badge">
         <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 8v5M12 16.5v.5" stroke="#a3261c" stroke-width="2.2" stroke-linecap="round"/></svg>
       </div>
       <h1>Something <em>Went Wrong.</em></h1>
-      <p>We couldn't confirm your payment status. If you were charged, don't worry. Please contact us and we'll sort it out right away.</p>
+      <p>We couldn't load your verification status. Please try again in a moment, or contact us and we'll sort it out right away.</p>
       <div class="actions">
-        <a href="/apply-now">Back to Application</a>
+        <% if (token) { %><a href="/apply-now/identity?token=<%= encodeURIComponent(token) %>">Try Again</a><% } %>
         <a href="/contact" class="secondary">Contact Us</a>
       </div>
     <% } %>

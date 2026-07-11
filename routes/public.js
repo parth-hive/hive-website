@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const crypto = require('crypto');
 const multer = require('multer');
 const rateLimit = require('express-rate-limit');
 const router = express.Router();
@@ -104,49 +105,8 @@ const idUpload = multer({
   }
 });
 
-// All outbound mail is sent from the Hive domain (verified in Resend).
-const MAIL_FROM = process.env.MAIL_FROM || 'Hive <vineet.dutta@hiveny.com>';
-// Master recipient for submitted inquiry/application details.
-const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL || 'vineet.dutta@hiveny.com';
-
-// Low-level mail send via the Resend HTTP API. Throws on failure so callers can
-// log it; callers wrap this so a failed send never blocks saving the inquiry.
-async function sendMail({ to, subject, html, replyTo }) {
-  if (!to) return;
-  if (!process.env.RESEND_API_KEY) {
-    console.warn(`[mail] RESEND_API_KEY missing — "${subject}" to ${to} not sent.`);
-    return;
-  }
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      from: MAIL_FROM,
-      to: [to],
-      subject,
-      html,
-      reply_to: replyTo || undefined
-    })
-  });
-  if (!res.ok) {
-    throw new Error(`Resend ${res.status}: ${await res.text()}`);
-  }
-  console.log(`[mail] Sent "${subject}" to ${to}`);
-}
-
-// Branded wrapper for confirmation emails sent to the person who submitted a form.
-function confirmationHtml(heading, bodyLines) {
-  return `
-    <div style="font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1a18;">
-      <h2 style="color: #1a1a18;">${heading}</h2>
-      ${bodyLines.map(l => `<p style="line-height: 1.6; color: #444;">${l}</p>`).join('')}
-      <p style="line-height: 1.6; color: #444;">Warm regards,<br>Vineet Dutta<br>Hive · <a href="https://hiveny.com" style="color: #d4920b;">hiveny.com</a></p>
-      <p style="margin-top: 20px; color: #888; font-size: 12px;">This is an automated confirmation from Hive. You can reply directly to this email to reach us.</p>
-    </div>`;
-}
+// Outbound mail helpers shared with the Stripe webhook handler.
+const { sendMail, confirmationHtml, NOTIFY_EMAIL } = require('../utils/mailer');
 
 // --- Form field validation ---------------------------------------------
 // Server-side mirror of the client-side pattern/minlength attributes, so the
@@ -158,6 +118,20 @@ const isText = (s, min, max) => typeof s === 'string' && s.trim().length >= min 
 // A URL or a social handle (e.g. https://linkedin.com/in/x, instagram.com/x, @handle)
 const isUrlish = (s) => /^(https?:\/\/)?([\w-]+\.)+[A-Za-z]{2,}(\/\S*)?$/.test(s) || /^@?[\w.]{2,50}$/.test(s);
 const isUnits = (s) => /^[0-9]{1,6} ?\+?$/.test(s);
+const isSsnLast4 = (s) => /^[0-9]{4}$/.test(s);
+// Applicant must be an adult with a plausible birth year.
+const isAdultDob = (s) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const dob = new Date(`${s}T00:00:00Z`);
+  if (isNaN(dob.getTime())) return false;
+  const now = new Date();
+  const age = (now - dob) / (365.25 * 24 * 3600 * 1000);
+  return age >= 18 && age <= 120;
+};
+// A LinkedIn or Instagram profile URL (Instagram is only accepted when the
+// profile is public — stated on the form; we can't verify visibility here).
+const isSocialProfile = (s) =>
+  /^(https?:\/\/)?(www\.)?(linkedin\.com\/(in|pub|company)\/|instagram\.com\/)[\w\-.%/?=&]+$/i.test(s);
 
 // Returns the first error message, or null if every check passes.
 function firstError(checks) {
@@ -465,6 +439,9 @@ router.post('/apply-now/session', applyNowLimiter, handleIdUpload, async (req, r
     const last_name = f('last_name');
     const email = f('email');
     const phone = f('phone');
+    const birthdate = f('birthdate');
+    const ssn_last4 = f('ssn_last4');
+    const social_profile = f('social_profile');
     const ec_name = f('emergency_contact_name');
     const ec_phone = f('emergency_contact_phone');
     const ec_email = f('emergency_contact_email');
@@ -473,7 +450,8 @@ router.post('/apply-now/session', applyNowLimiter, handleIdUpload, async (req, r
     const idBack = req.files && req.files.id_back && req.files.id_back[0];
 
     // All fields are mandatory.
-    if (!first_name || !last_name || !email || !phone || !ec_name || !ec_phone || !ec_email || !ec_relationship) {
+    if (!first_name || !last_name || !email || !phone || !birthdate || !ssn_last4 || !social_profile ||
+        !ec_name || !ec_phone || !ec_email || !ec_relationship) {
       return res.status(400).json({ error: 'Please fill in all required fields.' });
     }
     if (!idFront || !idBack) {
@@ -484,6 +462,9 @@ router.post('/apply-now/session', applyNowLimiter, handleIdUpload, async (req, r
       [isName(last_name), 'Please enter a valid last name (letters only, at least 2 characters).'],
       [isEmail(email), 'Please provide a valid email address.'],
       [isPhone(phone), 'Please enter a valid phone number (at least 7 digits).'],
+      [isAdultDob(birthdate), 'Please enter a valid birthdate (you must be at least 18).'],
+      [isSsnLast4(ssn_last4), 'Please enter the last 4 digits of your SSN (numbers only).'],
+      [isSocialProfile(social_profile), 'Please enter a LinkedIn or public Instagram profile link (e.g. linkedin.com/in/you).'],
       [isName(ec_name), 'Please enter a valid emergency contact name (letters only).'],
       [isPhone(ec_phone), 'Please enter a valid emergency contact phone number.'],
       [isEmail(ec_email), 'Please provide a valid emergency contact email.'],
@@ -504,11 +485,18 @@ router.post('/apply-now/session', applyNowLimiter, handleIdUpload, async (req, r
     const full_name = `${first_name} ${last_name}`;
     const answers = {
       first_name, last_name,
+      birthdate,
+      ssn_last4,
+      social_profile,
       emergency_contact_name: ec_name,
       emergency_contact_phone: ec_phone,
       emergency_contact_email: ec_email,
       emergency_contact_relationship: ec_relationship,
-      id_front_path, id_back_path
+      id_front_path, id_back_path,
+      // Unguessable reference used in the Stripe Identity return URL, so the
+      // post-verification page can look this application up without exposing
+      // sequential IDs.
+      identity_token: crypto.randomUUID()
     };
 
     const { rows } = await pool.query(
@@ -553,7 +541,8 @@ router.post('/apply-now/session', applyNowLimiter, handleIdUpload, async (req, r
 });
 
 // Stripe returns here after the embedded Checkout completes. Verify the
-// payment, finalize the application (idempotently), and send emails once.
+// payment, finalize the application (idempotently), send emails once, and
+// hand the applicant to step 2: Stripe Identity verification.
 router.get('/apply-now/complete', async (req, res) => {
   const renderResult = (status, extra = {}) =>
     res.render('public/apply-now-complete', Object.assign({ status }, extra));
@@ -576,13 +565,22 @@ router.get('/apply-now/complete', async (req, res) => {
              paid_at = NOW(),
              stripe_payment_intent = $1
        WHERE stripe_session_id = $2 AND payment_status <> 'paid'
-       RETURNING id, full_name, email, phone, answers`,
+       RETURNING id, full_name, email, phone, answers, identity_status`,
       [session.payment_intent || null, sessionId]
     );
 
-    // Already finalized (refresh) — just show success without re-emailing.
+    // Already finalized (refresh) — show success (and the identity-verification
+    // step in its current state) without re-emailing.
     if (rows.length === 0) {
-      return renderResult('paid');
+      const { rows: existing } = await pool.query(
+        `SELECT answers, identity_status FROM tenant_applications WHERE stripe_session_id = $1`,
+        [sessionId]
+      );
+      const row = existing[0];
+      return renderResult('paid', {
+        identityToken: (row && row.answers && row.answers.identity_token) || null,
+        identityStatus: (row && row.identity_status) || 'not_started'
+      });
     }
 
     const app = rows[0];
@@ -606,6 +604,9 @@ router.get('/apply-now/complete', async (req, res) => {
             ${row('Last Name', a.last_name)}
             ${row('Email', app.email)}
             ${row('Phone', app.phone)}
+            ${row('Birthdate', a.birthdate)}
+            ${row('SSN (last 4)', a.ssn_last4 ? `***-**-${a.ssn_last4}` : null)}
+            ${row('LinkedIn / Instagram', a.social_profile ? `<a href="${a.social_profile.startsWith('http') ? a.social_profile : 'https://' + a.social_profile}" style="color:#d4920b;">${a.social_profile}</a>` : null)}
             ${row('Photo ID — Front', idCell(frontLink))}
             ${row('Photo ID — Back', idCell(backLink))}
             ${row('Emergency Contact', a.emergency_contact_name)}
@@ -613,7 +614,7 @@ router.get('/apply-now/complete', async (req, res) => {
             ${row('Emergency — Email', a.emergency_contact_email)}
             ${row('Emergency — Relationship', a.emergency_contact_relationship)}
           </table>
-          <p style="margin-top:20px;color:#888;font-size:12px;">Payment confirmed via Stripe · Application #${app.id}</p>`
+          <p style="margin-top:20px;color:#888;font-size:12px;">Payment confirmed via Stripe · Application #${app.id} · Stripe Identity verification pending (you'll get a follow-up email with the result)</p>`
       });
     } catch (mailErr) {
       console.error('[mail] Failed to send paid-application notification:', mailErr.message);
@@ -626,7 +627,8 @@ router.get('/apply-now/complete', async (req, res) => {
         subject: 'We received your Hive application',
         html: confirmationHtml(`Thanks for applying, ${app.full_name}!`, [
           `We have received your application and your $${(APPLICATION_FEE_CENTS / 100).toFixed(2)} application fee.`,
-          'Our team will review your application shortly and reach out with next steps.',
+          'One step remains: a quick identity verification, handled securely by Stripe Identity. Use the "Verify My Identity" button on the confirmation page (you\'ll need your government ID and a device with a camera).',
+          'After that, our team will review your application and reach out with next steps.',
           'In the meantime, feel free to browse our latest listings at <a href="https://hiveny.com/properties" style="color: #d4920b;">hiveny.com/properties</a>.'
         ])
       });
@@ -634,10 +636,128 @@ router.get('/apply-now/complete', async (req, res) => {
       console.error('[mail] Failed to send applicant confirmation:', mailErr.message);
     }
 
-    renderResult('paid');
+    renderResult('paid', {
+      identityToken: (app.answers && app.answers.identity_token) || null,
+      identityStatus: app.identity_status || 'not_started'
+    });
   } catch (err) {
     console.error('Apply-now complete error:', err);
     renderResult('error');
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Stripe Identity — step 2 of the paid application (only reachable once paid).
+//
+// Redirect integration per the Stripe docs: we create a VerificationSession
+// server-side, send the applicant to the Stripe-hosted flow (session.url),
+// and Stripe returns them to /apply-now/identity. Hosted URLs are single-use
+// and expire after 48h, so we always fetch a fresh one via retrieve/create
+// instead of storing the URL. Final results arrive via webhook
+// (routes/stripeWebhook.js) because document checks finish asynchronously.
+
+// Looks up a paid application by its unguessable identity token.
+async function findPaidAppByToken(token) {
+  if (!token || typeof token !== 'string' || token.length > 100) return null;
+  const { rows } = await pool.query(
+    `SELECT id, full_name, email, answers, identity_session_id, identity_status, identity_last_error
+       FROM tenant_applications
+      WHERE answers->>'identity_token' = $1 AND payment_status = 'paid'`,
+    [token]
+  );
+  return rows[0] || null;
+}
+
+// Returns { status, url, reason } for the application's VerificationSession,
+// creating one on first use and reusing it afterwards (per Stripe's guidance,
+// reuse tracks failed attempts on one session instead of spawning duplicates).
+async function ensureIdentitySession(app, baseUrl) {
+  if (app.identity_session_id) {
+    const vs = await stripe.identity.verificationSessions.retrieve(app.identity_session_id);
+    if (vs.status !== 'canceled') {
+      return {
+        status: vs.status,
+        url: vs.url || null,
+        reason: (vs.last_error && vs.last_error.reason) || null
+      };
+    }
+    // Canceled sessions can't be resumed — fall through and start a new one.
+  }
+
+  const vs = await stripe.identity.verificationSessions.create({
+    type: 'document',
+    options: {
+      document: {
+        // The applicant must take a selfie that matches the document photo,
+        // proving the ID belongs to them (not just a stolen image).
+        require_matching_selfie: true
+      }
+    },
+    provided_details: { email: app.email },
+    metadata: { application_id: String(app.id) },
+    return_url: `${baseUrl}/apply-now/identity?token=${app.answers.identity_token}`
+  }, app.identity_session_id ? undefined : {
+    // Guards against double-clicks creating duplicate sessions (and duplicate
+    // per-verification Stripe charges) on first use.
+    idempotencyKey: `identity-${app.answers.identity_token}`
+  });
+
+  await pool.query(
+    `UPDATE tenant_applications SET identity_session_id = $1, identity_status = $2 WHERE id = $3`,
+    [vs.id, vs.status, app.id]
+  );
+  return { status: vs.status, url: vs.url || null, reason: null };
+}
+
+// "Verify My Identity" button target — sends the applicant into the hosted flow.
+router.get('/apply-now/identity/start', async (req, res) => {
+  try {
+    if (!stripe) return res.status(503).render('public/apply-now-identity', { status: 'error', reason: null, token: null });
+    const app = await findPaidAppByToken((req.query.token || '').trim());
+    if (!app) return res.redirect('/apply-now');
+
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const { status, url } = await ensureIdentitySession(app, baseUrl);
+
+    // Nothing left to capture (already submitted/verified) — show the status page.
+    if (!url || status === 'verified' || status === 'processing') {
+      return res.redirect(`/apply-now/identity?token=${encodeURIComponent(app.answers.identity_token)}`);
+    }
+    res.redirect(url);
+  } catch (err) {
+    console.error('Identity start error:', err);
+    res.status(500).render('public/apply-now-identity', { status: 'error', reason: null, token: (req.query.token || '').trim() || null });
+  }
+});
+
+// Stripe Identity returns the applicant here. Webhooks are authoritative for
+// the final status, but we sync opportunistically so the page is fresh even
+// when the webhook hasn't landed yet.
+router.get('/apply-now/identity', async (req, res) => {
+  const token = (req.query.token || '').trim();
+  try {
+    if (!stripe) return res.status(503).render('public/apply-now-identity', { status: 'error', reason: null, token: null });
+    const app = await findPaidAppByToken(token);
+    if (!app) return res.redirect('/apply-now');
+    if (!app.identity_session_id) {
+      return res.redirect(`/apply-now/identity/start?token=${encodeURIComponent(token)}`);
+    }
+
+    const vs = await stripe.identity.verificationSessions.retrieve(app.identity_session_id);
+    const reason = (vs.last_error && vs.last_error.reason) || null;
+    await pool.query(
+      `UPDATE tenant_applications
+          SET identity_status = $2,
+              identity_verified_at = CASE WHEN $3 THEN COALESCE(identity_verified_at, NOW()) ELSE identity_verified_at END,
+              identity_last_error = $4
+        WHERE id = $1`,
+      [app.id, vs.status, vs.status === 'verified', reason]
+    );
+
+    res.render('public/apply-now-identity', { status: vs.status, reason, token });
+  } catch (err) {
+    console.error('Identity return error:', err);
+    res.status(500).render('public/apply-now-identity', { status: 'error', reason: null, token: token || null });
   }
 });
 

@@ -16,6 +16,10 @@ app.set('trust proxy', 1);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// Stripe webhooks must be mounted BEFORE the body parsers: signature
+// verification needs the raw request body, which express.json() would consume.
+app.use('/webhooks', require('./routes/stripeWebhook'));
+
 // Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -102,7 +106,15 @@ app.use(session({
         paid_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT NOW()
       )`,
-      `CREATE INDEX IF NOT EXISTS tenant_applications_session_idx ON tenant_applications (stripe_session_id)`
+      `CREATE INDEX IF NOT EXISTS tenant_applications_session_idx ON tenant_applications (stripe_session_id)`,
+      // Stripe Identity verification of the applicant's government ID.
+      // `identity_status` mirrors the VerificationSession status ('not_started'
+      // until the applicant opens the hosted flow), updated by the webhook.
+      `ALTER TABLE tenant_applications ADD COLUMN IF NOT EXISTS identity_session_id VARCHAR(255)`,
+      `ALTER TABLE tenant_applications ADD COLUMN IF NOT EXISTS identity_status VARCHAR(30) NOT NULL DEFAULT 'not_started'`,
+      `ALTER TABLE tenant_applications ADD COLUMN IF NOT EXISTS identity_verified_at TIMESTAMP`,
+      `ALTER TABLE tenant_applications ADD COLUMN IF NOT EXISTS identity_last_error TEXT`,
+      `CREATE INDEX IF NOT EXISTS tenant_applications_identity_idx ON tenant_applications (identity_session_id)`
     ];
     for (const sql of migrations) {
       await pool.query(sql);
